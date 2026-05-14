@@ -68,7 +68,7 @@ module.exports = async function handler(req, res) {
 
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
-    const model = process.env.OPENAI_MODEL || "gpt-5.4-mini";
+    const model = process.env.OPENAI_MODEL || "gpt-5.5";
     const userInput = [
       `Вопрос пользователя: ${body.question || ""}`,
       "Контекст цифрового двойника:",
