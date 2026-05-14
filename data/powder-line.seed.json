@@ -1,0 +1,45 @@
+{
+  "schemaVersion": "0.1.0",
+  "plant": {
+    "id": "plant-powder-01",
+    "name": "Demo Powder Coating Plant",
+    "timezone": "Asia/Yekaterinburg",
+    "mode": "offline"
+  },
+  "line": {
+    "id": "powder-line-01",
+    "name": "Линия порошковой краски 01",
+    "nominalShiftHours": 8,
+    "targetOee": 0.82
+  },
+  "equipment": [
+    { "id": "raw-storage", "name": "Склад сырья", "area": "Подготовка", "capacityKgH": 950, "cycleMin": 6, "powerKw": 4, "criticality": 42 },
+    { "id": "weighing", "name": "Дозирование и взвешивание", "area": "Подготовка", "capacityKgH": 520, "cycleMin": 18, "powerKw": 7, "criticality": 68 },
+    { "id": "premixer", "name": "Предварительный смеситель", "area": "Смешение", "capacityKgH": 500, "cycleMin": 22, "powerKw": 18, "criticality": 61 },
+    { "id": "extruder", "name": "Экструдер", "area": "Плавление", "capacityKgH": 410, "cycleMin": 26, "powerKw": 96, "criticality": 94 },
+    { "id": "cooling-belt", "name": "Охлаждающая лента", "area": "Охлаждение", "capacityKgH": 450, "cycleMin": 14, "powerKw": 22, "criticality": 72 },
+    { "id": "crusher", "name": "Дробилка", "area": "Измельчение", "capacityKgH": 430, "cycleMin": 10, "powerKw": 31, "criticality": 74 },
+    { "id": "mill-classifier", "name": "Мельница и классификатор", "area": "Измельчение", "capacityKgH": 360, "cycleMin": 32, "powerKw": 118, "criticality": 97 },
+    { "id": "sieve", "name": "Контрольное сито", "area": "Качество", "capacityKgH": 390, "cycleMin": 16, "powerKw": 13, "criticality": 77 },
+    { "id": "packing", "name": "Фасовка", "area": "Готовая продукция", "capacityKgH": 470, "cycleMin": 20, "powerKw": 11, "criticality": 58 },
+    { "id": "aspiration", "name": "Аспирация и фильтры", "area": "Инфраструктура", "capacityKgH": 900, "cycleMin": 0, "powerKw": 34, "criticality": 88 },
+    { "id": "quality-lab", "name": "Лаборатория ОТК", "area": "Качество", "capacityKgH": 260, "cycleMin": 28, "powerKw": 5, "criticality": 81 }
+  ],
+  "routes": [
+    {
+      "id": "standard-powder-route",
+      "name": "Базовый маршрут порошковой краски",
+      "steps": ["raw-storage", "weighing", "premixer", "extruder", "cooling-belt", "crusher", "mill-classifier", "sieve", "packing"]
+    }
+  ],
+  "recipes": [
+    { "id": "polyester-white", "name": "Полиэфир белый RAL 9016", "nominalKgH": 430, "complexity": 1.0, "qualityRisk": 0.18 },
+    { "id": "epoxy-black", "name": "Эпокси черный RAL 9005", "nominalKgH": 385, "complexity": 1.14, "qualityRisk": 0.26 },
+    { "id": "textured-red", "name": "Текстурный красный", "nominalKgH": 315, "complexity": 1.34, "qualityRisk": 0.38 }
+  ],
+  "assumptions": [
+    "Все мощности являются демонстрационными и подлежат замене паспортными значениями.",
+    "Расчет OEE нужен для прототипа и не является производственным расчетом.",
+    "Рецептуры не содержат коммерческих формул, только сценарные коэффициенты."
+  ]
+}
