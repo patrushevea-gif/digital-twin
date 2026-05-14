@@ -18,12 +18,12 @@
 npm run dev
 ```
 
-Откройте `http://localhost:5173`.
+Откройте `http://localhost:5173/apps/web/`.
 
 Если npm не нужен, можно запустить напрямую:
 
 ```powershell
-python -m http.server 5173 --directory apps/web
+python -m http.server 5173 --directory .
 ```
 
 ## Структура
