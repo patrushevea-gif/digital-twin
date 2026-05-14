@@ -6,6 +6,78 @@
     <title>PowderTwin | Digital Factory</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230a1017'/%3E%3Cpath d='M18 18h28v8H34v20h-8V26h-8z' fill='%235ed7d1'/%3E%3C/svg%3E" />
     <link rel="stylesheet" href="styles.css" />
+    <style>
+      input[type="text"], select { min-width: 0; }
+      .command-center, .mvp-card {
+        border: 1px solid rgba(119, 166, 255, 0.2);
+        background: linear-gradient(145deg, rgba(15, 25, 37, 0.94), rgba(8, 14, 22, 0.96));
+        border-radius: 8px;
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.22);
+      }
+      .command-center { margin-top: 14px; padding: 22px; }
+      .command-title { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+      .command-title h2, .mvp-card h2 { margin: 0; color: #fff; font-size: clamp(22px, 3vw, 32px); line-height: 1.08; overflow-wrap: anywhere; }
+      .command-badge { border: 1px solid rgba(94, 215, 209, 0.55); border-radius: 999px; padding: 8px 12px; color: #5ed7d1; font: 800 12px/1 Inter, Segoe UI, sans-serif; text-transform: uppercase; white-space: nowrap; }
+      .command-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+      .command-metric, .factory-health-card, .readiness-row, .template-card, .library-node, .assumption-row, .integration-row, .builder-chip {
+        min-width: 0;
+        border: 1px solid rgba(145, 166, 183, 0.16);
+        background: rgba(6, 12, 20, 0.5);
+        border-radius: 8px;
+      }
+      .command-metric { padding: 14px; }
+      .command-metric span, .readiness-row span, .assumption-row span, .integration-row span { color: #9cc6e8; overflow-wrap: anywhere; }
+      .command-metric strong { display: block; color: #fff; font-size: 26px; line-height: 1.1; margin: 8px 0 6px; }
+      .command-metric small, .factory-health-card small, .library-node small, .integration-row small { color: #9cc6e8; line-height: 1.35; overflow-wrap: anywhere; }
+      .factory-health-map { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+      .factory-health-card { padding: 16px; }
+      .factory-health-card.active { border-color: rgba(94, 215, 209, 0.55); background: rgba(94, 215, 209, 0.08); }
+      .factory-health-card span { display: block; color: #9cc6e8; margin-bottom: 8px; }
+      .factory-health-card strong { display: block; color: #fff; overflow-wrap: anywhere; }
+      .mvp-grid { display: grid; grid-template-columns: 1.05fr 1.05fr 1fr; gap: 14px; margin-top: 14px; align-items: start; }
+      .mvp-card { padding: 18px; min-width: 0; }
+      .mvp-card.builder-card { grid-row: span 2; }
+      .mvp-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+      .mvp-head > span, .mvp-card > span { color: #fff; font-weight: 800; }
+      .readiness-list, .node-library, .assumption-list, .integration-list { display: grid; gap: 9px; }
+      .readiness-row { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(120px, 0.8fr); gap: 12px; padding: 12px; align-items: center; }
+      .readiness-row strong, .template-card strong, .library-node strong, .assumption-row strong, .integration-row strong, .builder-chip strong { color: #fff; overflow-wrap: anywhere; }
+      .readiness-row small { display: block; color: #9cc6e8; margin-top: 6px; overflow-wrap: anywhere; }
+      .readiness-bar { height: 8px; border-radius: 999px; background: rgba(145, 166, 183, 0.18); overflow: hidden; }
+      .readiness-bar i { display: block; height: 100%; width: var(--value); border-radius: inherit; background: linear-gradient(90deg, #ff7f6f, #f1c85b, #76df86); }
+      .template-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+      .template-card { padding: 12px; text-align: left; color: #9cc6e8; cursor: pointer; transition: 160ms ease; }
+      .template-card:hover, .template-card.active { border-color: rgba(94, 215, 209, 0.65); background: rgba(94, 215, 209, 0.11); }
+      .template-card strong { display: block; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .builder-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+      .builder-form label, .builder-form .wide { min-width: 0; }
+      .builder-form .wide { grid-column: 1 / -1; }
+      .builder-form span { display: block; color: #9cc6e8; font-size: 12px; margin-bottom: 6px; }
+      .builder-form input, .builder-form select {
+        width: 100%; border: 1px solid rgba(119, 166, 255, 0.22); background: rgba(8, 14, 22, 0.76); color: #fff; border-radius: 8px; padding: 11px 12px; font: inherit;
+      }
+      .builder-form button { width: 100%; }
+      .builder-preview { display: grid; gap: 9px; margin-top: 12px; }
+      .builder-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+      .builder-chip { padding: 12px; }
+      .builder-chip span { display: block; color: #9cc6e8; margin-bottom: 6px; }
+      .builder-lane, .operation-list { display: grid; gap: 8px; }
+      .library-node { display: block; width: 100%; padding: 12px; text-align: left; color: #9cc6e8; cursor: pointer; }
+      .library-node.active { border-color: rgba(94, 215, 209, 0.62); background: rgba(94, 215, 209, 0.1); }
+      .library-node strong, .library-node span, .library-node small { display: block; }
+      .library-node span { margin: 6px 0; color: #b9d7ef; }
+      .assumption-row, .integration-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 14px; padding: 12px; align-items: start; }
+      .assumption-row small, .integration-row small { grid-column: 1 / -1; color: #9cc6e8; overflow-wrap: anywhere; }
+      .reset-inline { border: 1px solid rgba(119, 166, 255, 0.24); background: transparent; color: #9cc6e8; border-radius: 8px; padding: 7px 10px; cursor: pointer; }
+      @media (max-width: 1260px) { .command-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .mvp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+      @media (max-width: 980px) { .command-grid, .mvp-grid { grid-template-columns: 1fr; } .mvp-card.builder-card { grid-row: auto; } }
+      @media (max-width: 680px) {
+        .command-center, .mvp-card { padding: 14px; }
+        .command-title, .mvp-head { align-items: flex-start; }
+        .command-grid, .factory-health-map, .template-grid, .builder-form, .builder-summary, .readiness-row { grid-template-columns: 1fr; }
+        .command-badge { white-space: normal; text-align: center; }
+      }
+    </style>
   </head>
   <body>
     <div class="app-shell">
@@ -18,7 +90,6 @@
             <p class="subtitle" id="breadcrumb">Завод 01 / Цех покрытий / Линия порошковой краски</p>
           </div>
         </div>
-
         <div class="top-actions">
           <label class="select-label" for="recipe-select">Рецептура</label>
           <select id="recipe-select"></select>
@@ -34,81 +105,33 @@
           <section class="line-card">
             <p class="panel-kicker" id="factory-context">Завод 01 · Цех покрытий</p>
             <h2 id="line-title">Линия порошковой краски</h2>
-            <div class="rail-meta">
-              <span id="line-mode">offline twin</span>
-              <span>v0.2</span>
-            </div>
+            <div class="rail-meta"><span id="line-mode">offline twin</span><span>v0.2</span></div>
           </section>
-
           <section class="structure-card">
-            <div class="section-heading">
-              <p class="panel-kicker">Структура</p>
-              <span id="structure-status">модель</span>
-            </div>
+            <div class="section-heading"><p class="panel-kicker">Структура</p><span id="structure-status">модель</span></div>
             <div class="structure-map" id="structure-map"></div>
           </section>
-
           <nav class="asset-list" id="asset-list" aria-label="Оборудование линии"></nav>
         </aside>
 
         <main class="main-stage">
           <section class="metric-strip" aria-label="KPI линии">
-            <article class="metric-card">
-              <span>Выпуск</span>
-              <strong id="metric-throughput">0 кг</strong>
-              <small id="metric-throughput-caption">смена</small>
-            </article>
-            <article class="metric-card">
-              <span>OEE</span>
-              <strong id="metric-oee">0%</strong>
-              <small id="metric-oee-caption">A / P / Q</small>
-            </article>
-            <article class="metric-card">
-              <span>Ограничение</span>
-              <strong id="metric-bottleneck">-</strong>
-              <small id="metric-bottleneck-caption">по загрузке</small>
-            </article>
-            <article class="metric-card">
-              <span>Энергия</span>
-              <strong id="metric-energy">0 кВт·ч</strong>
-              <small id="metric-energy-caption">кВт·ч/кг</small>
-            </article>
+            <article class="metric-card"><span>Выпуск</span><strong id="metric-throughput">0 кг</strong><small id="metric-throughput-caption">смена</small></article>
+            <article class="metric-card"><span>OEE</span><strong id="metric-oee">0%</strong><small id="metric-oee-caption">A / P / Q</small></article>
+            <article class="metric-card"><span>Ограничение</span><strong id="metric-bottleneck">-</strong><small id="metric-bottleneck-caption">по загрузке</small></article>
+            <article class="metric-card"><span>Энергия</span><strong id="metric-energy">0 кВт·ч</strong><small id="metric-energy-caption">кВт·ч/кг</small></article>
           </section>
-
           <section class="canvas-deck">
             <canvas id="line-canvas"></canvas>
-            <div class="canvas-label">
-              <span>Digital line layer</span>
-              <strong id="canvas-line-name">Powder coating</strong>
-            </div>
-            <div class="canvas-overlay">
-              <div><span class="dot running"></span>работает</div>
-              <div><span class="dot constraint"></span>узкое место</div>
-              <div><span class="dot idle"></span>ожидание</div>
-            </div>
+            <div class="canvas-label"><span>Digital line layer</span><strong id="canvas-line-name">Powder coating</strong></div>
+            <div class="canvas-overlay"><div><span class="dot running"></span>работает</div><div><span class="dot constraint"></span>узкое место</div><div><span class="dot idle"></span>ожидание</div></div>
           </section>
-
           <section class="scenario-dock" aria-label="Параметры сценария">
-            <label>
-              <span>Интенсивность</span>
-              <input id="intensity-range" type="range" min="35" max="115" value="72" />
-            </label>
-            <label>
-              <span>Длина смены</span>
-              <input id="shift-range" type="range" min="4" max="12" value="8" />
-            </label>
-            <label>
-              <span>Размер партии</span>
-              <input id="batch-range" type="range" min="100" max="1200" step="50" value="500" />
-            </label>
-            <label>
-              <span>Строгость качества</span>
-              <input id="quality-range" type="range" min="40" max="95" value="65" />
-            </label>
-            <label class="toggle-label">
-              <input id="cleaning-toggle" type="checkbox" checked />
-              <span>Плановая очистка</span>
-            </label>
+            <label><span>Интенсивность</span><input id="intensity-range" type="range" min="35" max="115" value="72" /></label>
+            <label><span>Длина смены</span><input id="shift-range" type="range" min="4" max="12" value="8" /></label>
+            <label><span>Размер партии</span><input id="batch-range" type="range" min="100" max="1200" step="50" value="500" /></label>
+            <label><span>Строгость качества</span><input id="quality-range" type="range" min="40" max="95" value="65" /></label>
+            <label class="toggle-label"><input id="cleaning-toggle" type="checkbox" checked /><span>Плановая очистка</span></label>
             <button class="primary-button" id="save-scenario" type="button">Сохранить сценарий</button>
           </section>
         </main>
@@ -119,93 +142,48 @@
             <button class="tab" data-tab="quality" type="button">Качество</button>
             <button class="tab" data-tab="energy" type="button">Энергия</button>
           </section>
-
           <section class="equipment-card">
-            <div class="equipment-heading">
-              <div>
-                <p class="panel-kicker" id="equipment-area">-</p>
-                <h2 id="equipment-name">-</h2>
-              </div>
-              <span class="status-pill" id="equipment-status">-</span>
-            </div>
-
+            <div class="equipment-heading"><div><p class="panel-kicker" id="equipment-area">-</p><h2 id="equipment-name">-</h2></div><span class="status-pill" id="equipment-status">-</span></div>
             <dl class="passport-grid">
-              <div><dt>Мощность</dt><dd id="equipment-capacity">-</dd></div>
-              <div><dt>Цикл</dt><dd id="equipment-cycle">-</dd></div>
-              <div><dt>Критичность</dt><dd id="equipment-criticality">-</dd></div>
-              <div><dt>Энергия</dt><dd id="equipment-power">-</dd></div>
+              <div><dt>Мощность</dt><dd id="equipment-capacity">-</dd></div><div><dt>Цикл</dt><dd id="equipment-cycle">-</dd></div>
+              <div><dt>Критичность</dt><dd id="equipment-criticality">-</dd></div><div><dt>Энергия</dt><dd id="equipment-power">-</dd></div>
             </dl>
-
             <div class="gauge-stack">
-              <div class="gauge-row">
-                <div class="gauge-label"><span>Загрузка</span><strong id="load-value">0%</strong></div>
-                <div class="gauge-track"><span id="load-bar"></span></div>
-              </div>
-              <div class="gauge-row">
-                <div class="gauge-label"><span>Риск</span><strong id="risk-value">0%</strong></div>
-                <div class="gauge-track amber"><span id="risk-bar"></span></div>
-              </div>
+              <div class="gauge-row"><div class="gauge-label"><span>Загрузка</span><strong id="load-value">0%</strong></div><div class="gauge-track"><span id="load-bar"></span></div></div>
+              <div class="gauge-row"><div class="gauge-label"><span>Риск</span><strong id="risk-value">0%</strong></div><div class="gauge-track amber"><span id="risk-bar"></span></div></div>
             </div>
-
             <div class="tag-cloud" id="tag-cloud"></div>
           </section>
-
           <section class="insight-panel" id="insight-panel"></section>
-
           <section class="scenario-panel">
-            <div class="section-heading">
-              <p class="panel-kicker">Сценарии</p>
-              <button class="ghost-button" id="clear-scenarios" type="button">очистить</button>
-            </div>
-            <div class="scenario-list" id="scenario-list"></div>
-            <div class="compare-panel" id="compare-panel"></div>
+            <div class="section-heading"><p class="panel-kicker">Сценарии</p><button class="ghost-button" id="clear-scenarios" type="button">очистить</button></div>
+            <div class="scenario-list" id="scenario-list"></div><div class="compare-panel" id="compare-panel"></div>
           </section>
         </aside>
       </div>
+
+      <section class="command-center">
+        <div class="command-title"><div><p class="panel-kicker">Digital factory command</p><h2>Центр управления двумя заводами</h2></div><span class="command-badge">Offline MVP</span></div>
+        <div class="command-grid" id="command-center-grid"></div>
+        <div class="factory-health-map" id="factory-health-map"></div>
+      </section>
+
+      <section class="mvp-grid">
+        <article class="mvp-card"><div class="mvp-head"><div><p class="panel-kicker">Data readiness</p><h2>Карта готовности данных</h2></div><span id="readiness-score">0%</span></div><div class="readiness-list" id="readiness-list"></div></article>
+        <article class="mvp-card"><div class="mvp-head"><div><p class="panel-kicker">Scenario matrix</p><h2>Матрица сценариев</h2></div><span id="active-template-label">Обычная смена</span></div><div class="template-grid" id="scenario-template-grid"></div></article>
+        <article class="mvp-card builder-card"><div class="mvp-head"><div><p class="panel-kicker">Factory builder</p><h2>Конструктор линии</h2></div><button class="reset-inline" id="reset-builder" type="button">сброс</button></div><div class="builder-form"><label><span>Завод</span><input id="builder-factory" type="text" /></label><label><span>Цех</span><input id="builder-area" type="text" /></label><label class="wide"><span>Линия</span><input id="builder-line" type="text" /></label><label class="wide"><span>Типовой узел</span><select id="builder-equipment"></select></label><button class="primary-button wide" id="add-builder-equipment" type="button">Добавить узел</button><label class="wide"><span>Операция</span><input id="builder-operation" type="text" /></label><button class="ghost-button wide" id="add-builder-operation" type="button">Добавить операцию</button></div><div class="builder-preview" id="builder-preview"></div></article>
+        <article class="mvp-card"><div class="mvp-head"><div><p class="panel-kicker">Node library</p><h2>Библиотека типовых узлов</h2></div><span>powder coating</span></div><div class="node-library" id="node-library"></div></article>
+        <article class="mvp-card"><div class="mvp-head"><div><p class="panel-kicker">Assumption ledger</p><h2>Источники значений</h2></div><span>traceability</span></div><div class="assumption-list" id="assumption-list"></div></article>
+        <article class="mvp-card"><div class="mvp-head"><div><p class="panel-kicker">Integration ready</p><h2>Будущие подключения</h2></div><span>API later</span></div><div class="integration-list" id="integration-list"></div></article>
+      </section>
     </div>
 
     <script id="plant-model" type="application/json">
       {
-        "company": {
-          "id": "powdertwin-group",
-          "name": "PowderTwin Industrial Group"
-        },
+        "company": { "id": "powdertwin-group", "name": "PowderTwin Industrial Group" },
         "factories": [
-          {
-            "id": "factory-01",
-            "name": "Завод 01",
-            "shortName": "Завод 01",
-            "description": "Площадка порошковых покрытий",
-            "status": "active",
-            "areas": [
-              {
-                "id": "coating-area",
-                "name": "Цех покрытий",
-                "lines": [
-                  {
-                    "id": "powder-line-01",
-                    "name": "Линия порошковой краски",
-                    "mode": "offline twin",
-                    "equipmentIds": ["raw-storage", "weighing", "premixer", "extruder", "cooling-belt", "crusher", "mill-classifier", "sieve", "packing", "aspiration", "quality-lab"]
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "id": "factory-02",
-            "name": "Завод 02",
-            "shortName": "Завод 02",
-            "description": "Вторая производственная площадка",
-            "status": "planned",
-            "areas": [
-              {
-                "id": "future-area",
-                "name": "Будущий производственный контур",
-                "lines": []
-              }
-            ]
-          }
+          { "id": "factory-01", "name": "Завод 01", "shortName": "Завод 01", "description": "Площадка порошковых покрытий", "status": "active", "areas": [{ "id": "coating-area", "name": "Цех покрытий", "lines": [{ "id": "powder-line-01", "name": "Линия порошковой краски", "mode": "offline twin", "equipmentIds": ["raw-storage", "weighing", "premixer", "extruder", "cooling-belt", "crusher", "mill-classifier", "sieve", "packing", "aspiration", "quality-lab"] }] }] },
+          { "id": "factory-02", "name": "Завод 02", "shortName": "Завод 02", "description": "Вторая производственная площадка", "status": "planned", "areas": [{ "id": "future-area", "name": "Будущий производственный контур", "lines": [] }] }
         ],
         "recipes": [
           { "id": "polyester-white", "name": "Полиэфир белый RAL 9016", "nominalKgH": 430, "complexity": 1.0, "qualityRisk": 0.18, "color": "#f4f7fb" },
@@ -229,5 +207,122 @@
       }
     </script>
     <script src="app.js"></script>
+    <script>
+      (() => {
+        const model = JSON.parse(document.getElementById("plant-model").textContent);
+        const scenarioKey = "powdertwin.scenarios.v2";
+        const builderKey = "powdertwin.builder.v2";
+        const $ = (id) => document.getElementById(id);
+        const safe = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
+        const format = (value) => new Intl.NumberFormat("ru-RU").format(Math.round(value));
+        const dataCatalog = [
+          ["Планировка линии", "Производство", 12, "допущение", "Маршрут, буферы, логистика"],
+          ["Список оборудования", "Техническая служба", 52, "модель", "Цепочка и паспорт узлов"],
+          ["Паспортные мощности", "Технолог", 38, "расчет", "Выпуск и узкие места"],
+          ["Времена операций", "Мастер смены", 24, "экспертно", "Симуляция смены"],
+          ["Рецептуры и партии", "Технология", 34, "шаблон", "Сложность, качество, переналадка"],
+          ["Простои и причины", "Производство", 8, "нет данных", "Доступность и OEE"],
+          ["Переналадка и очистка", "Технология", 20, "допущение", "Потери, риск пересорта"],
+          ["Качество и допуски", "ОТК", 26, "экспертно", "Брак, контрольные точки"],
+          ["Энергопотребление", "Энергетик", 18, "расчет", "кВт·ч/кг и пики"]
+        ];
+        const nodeLibrary = [
+          ["raw-storage", "Склад сырья", "Приемка и хранение сырья", 950, 4, "экспертно"], ["weighing", "Дозирование", "Взвешивание компонентов партии", 520, 7, "расчет"],
+          ["premixer", "Предсмеситель", "Сухое смешение рецептуры", 500, 18, "расчет"], ["extruder", "Экструдер", "Плавление и диспергирование", 410, 96, "паспорт нужно уточнить"],
+          ["cooling-belt", "Охлаждение", "Формирование чипсов", 450, 22, "допущение"], ["crusher", "Дробилка", "Дробление чипсов", 430, 31, "допущение"],
+          ["mill-classifier", "Мельница", "Помол и классификация", 360, 118, "критично уточнить"], ["sieve", "Сито", "Отсев oversize", 390, 13, "экспертно"],
+          ["packing", "Фасовка", "Фасовка и маркировка", 470, 11, "допущение"], ["quality-lab", "ОТК", "Цвет, d50/d90, gel time", 260, 5, "регламент нужен"]
+        ].map(([id, name, operation, capacityKgH, powerKw, source]) => ({ id, name, operation, capacityKgH, powerKw, source }));
+        const templates = [
+          ["base-shift", "Обычная смена", "polyester-white", 72, 8, 500, 65, true], ["high-load", "Высокая загрузка", "primer-grey", 108, 10, 850, 58, true],
+          ["complex-recipe", "Сложная рецептура", "textured-red", 82, 8, 450, 88, true], ["color-change", "Частая смена цвета", "epoxy-black", 68, 8, 300, 82, true],
+          ["no-cleaning", "Очистка отключена", "polyester-white", 78, 8, 650, 76, false], ["mill-limit", "Ограничение мельницы", "textured-red", 96, 9, 700, 70, true],
+          ["extruder-limit", "Ограничение экструдера", "epoxy-black", 104, 9, 750, 64, true]
+        ].map(([id, name, recipe, intensity, shift, batch, quality, cleaning]) => ({ id, name, recipe, intensity, shift, batch, quality, cleaning }));
+        const ports = [["Excel / CSV", "готовить", "ручная загрузка паспорта и партий"], ["1C / ERP", "позже", "заказы, номенклатура, партии"], ["MES", "позже", "сменные задания и фактический выпуск"], ["SCADA", "позже", "температуры, токи, статусы"], ["Энергомониторинг", "позже", "кВт·ч, пики, удельная энергия"], ["Лаборатория ОТК", "позже", "гранулометрия, цвет, gel time"]];
+        let activeTemplate = "base-shift";
+        const defaultDraft = () => ({ factory: "Завод 02", area: "Будущий производственный контур", line: "Линия порошковой краски 02", node: "extruder", operation: "Переналадка после смены цвета", equipment: [], operations: [] });
+        const loadDraft = () => { try { return { ...defaultDraft(), ...JSON.parse(localStorage.getItem(builderKey) || "{}") }; } catch { return defaultDraft(); } };
+        let draft = loadDraft();
+        const saveDraft = () => localStorage.setItem(builderKey, JSON.stringify(draft));
+        const readinessScore = () => Math.round(dataCatalog.reduce((sum, row) => sum + row[2], 0) / dataCatalog.length);
+        const getScenarios = () => { try { return JSON.parse(localStorage.getItem(scenarioKey) || "[]"); } catch { return []; } };
+
+        function renderCommand() {
+          const lines = model.factories.reduce((sum, factory) => sum + factory.areas.reduce((areaSum, area) => areaSum + area.lines.length, 0), 0);
+          const cards = [["Заводов в модели", model.factories.length, "1 активный · 1 план"], ["Линий", lines, "первый завод наполнен"], ["Узлов линии", model.equipment.length, "типовая цепочка порошковой краски"], ["Готовность данных", `${readinessScore()}%`, "до точной модели"], ["Сценариев", getScenarios().length, "локально сохранено"], ["Черновик завода 02", draft.equipment.length, "узлов в конструкторе"]];
+          $("command-center-grid").innerHTML = cards.map(([label, value, note]) => `<article class="command-metric"><span>${safe(label)}</span><strong>${safe(value)}</strong><small>${safe(note)}</small></article>`).join("");
+          $("factory-health-map").innerHTML = model.factories.map((factory) => {
+            const count = factory.areas.reduce((sum, area) => sum + area.lines.length, 0);
+            const active = factory.status === "active";
+            return `<article class="factory-health-card ${active ? "active" : ""}"><span>${safe(factory.name)}</span><strong>${safe(factory.description)}</strong><small>${count ? `${count} линия · ${$("metric-oee")?.textContent || "0%"} OEE` : "контур создан · данных нет"}</small></article>`;
+          }).join("");
+        }
+
+        function renderReadiness() {
+          $("readiness-score").textContent = `${readinessScore()}%`;
+          $("readiness-list").innerHTML = dataCatalog.map(([name, owner, percent, source, impact]) => `<article class="readiness-row"><div><strong>${safe(name)}</strong><span>${safe(owner)} · ${safe(source)}</span><small>${safe(impact)}</small></div><div class="readiness-bar" style="--value:${percent}%"><i></i></div></article>`).join("");
+        }
+
+        function applyTemplate(template) {
+          activeTemplate = template.id;
+          const recipe = $("recipe-select");
+          if (recipe) { recipe.value = template.recipe; recipe.dispatchEvent(new Event("change", { bubbles: true })); }
+          [["intensity-range", template.intensity], ["shift-range", template.shift], ["batch-range", template.batch], ["quality-range", template.quality]].forEach(([id, value]) => { const input = $(id); if (input) { input.value = value; input.dispatchEvent(new Event("input", { bubbles: true })); } });
+          const cleaning = $("cleaning-toggle");
+          if (cleaning) { cleaning.checked = template.cleaning; cleaning.dispatchEvent(new Event("change", { bubbles: true })); }
+          renderTemplates(); setTimeout(() => { renderAssumptions(); renderCommand(); }, 80);
+        }
+
+        function renderTemplates() {
+          const selected = templates.find((item) => item.id === activeTemplate) || templates[0];
+          $("active-template-label").textContent = selected.name;
+          $("scenario-template-grid").innerHTML = templates.map((template) => `<button class="template-card ${template.id === activeTemplate ? "active" : ""}" data-template="${template.id}" type="button"><strong>${safe(template.name)}</strong><span>${template.intensity}% · ${template.shift} ч · ${template.batch} кг</span></button>`).join("");
+          document.querySelectorAll("[data-template]").forEach((button) => button.addEventListener("click", () => applyTemplate(templates.find((template) => template.id === button.dataset.template))));
+        }
+
+        function syncBuilderControls() {
+          $("builder-factory").value = draft.factory; $("builder-area").value = draft.area; $("builder-line").value = draft.line; $("builder-operation").value = draft.operation; $("builder-equipment").value = draft.node;
+        }
+
+        function renderBuilder() {
+          const capacity = draft.equipment.length ? draft.equipment.reduce((min, node) => Math.min(min, node.capacityKgH), Infinity) : 0;
+          const power = draft.equipment.reduce((sum, node) => sum + node.powerKw, 0);
+          $("builder-preview").innerHTML = `<div class="builder-summary"><article class="builder-chip"><span>Завод</span><strong>${safe(draft.factory)}</strong></article><article class="builder-chip"><span>Цех</span><strong>${safe(draft.area)}</strong></article><article class="builder-chip"><span>Линия</span><strong>${safe(draft.line)}</strong></article><article class="builder-chip"><span>Расчетная мощность</span><strong>${capacity ? `${format(capacity)} кг/ч` : "-"}</strong></article><article class="builder-chip"><span>Установленная энергия</span><strong>${power ? `${format(power)} кВт` : "-"}</strong></article></div><div class="builder-lane">${draft.equipment.length ? draft.equipment.map((node, index) => `<article class="builder-chip"><span>${index + 1}. ${safe(node.name)}</span><strong>${safe(node.operation)}</strong></article>`).join("") : `<article class="builder-chip"><span>Черновик</span><strong>Узлы пока не добавлены</strong></article>`}</div><div class="operation-list">${draft.operations.length ? draft.operations.map((name) => `<article class="builder-chip"><span>Операция</span><strong>${safe(name)}</strong></article>`).join("") : `<article class="builder-chip"><span>Операции</span><strong>Пока не добавлены</strong></article>`}</div>`;
+          renderCommand();
+        }
+
+        function wireBuilder() {
+          $("builder-equipment").innerHTML = nodeLibrary.map((node) => `<option value="${node.id}">${safe(node.name)}</option>`).join("");
+          syncBuilderControls();
+          ["builder-factory", "builder-area", "builder-line", "builder-operation"].forEach((id) => $(id).addEventListener("input", () => { draft.factory = $("builder-factory").value; draft.area = $("builder-area").value; draft.line = $("builder-line").value; draft.operation = $("builder-operation").value; saveDraft(); renderBuilder(); }));
+          $("builder-equipment").addEventListener("change", (event) => { draft.node = event.target.value; saveDraft(); renderLibrary(); });
+          $("add-builder-equipment").addEventListener("click", () => { const node = nodeLibrary.find((item) => item.id === draft.node) || nodeLibrary[0]; draft.equipment.push({ ...node, uid: `${node.id}-${Date.now()}` }); saveDraft(); renderBuilder(); });
+          $("add-builder-operation").addEventListener("click", () => { const value = $("builder-operation").value.trim(); if (!value) return; draft.operations.push(value); draft.operation = ""; $("builder-operation").value = ""; saveDraft(); renderBuilder(); });
+          $("reset-builder").addEventListener("click", () => { draft = defaultDraft(); saveDraft(); syncBuilderControls(); renderBuilder(); renderLibrary(); });
+        }
+
+        function renderLibrary() {
+          $("node-library").innerHTML = nodeLibrary.map((node) => `<button class="library-node ${node.id === draft.node ? "active" : ""}" data-node="${node.id}" type="button"><strong>${safe(node.name)}</strong><span>${safe(node.operation)}</span><small>${node.capacityKgH} кг/ч · ${node.powerKw} кВт · ${safe(node.source)}</small></button>`).join("");
+          document.querySelectorAll("[data-node]").forEach((button) => button.addEventListener("click", () => { draft.node = button.dataset.node; $("builder-equipment").value = draft.node; saveDraft(); renderLibrary(); }));
+        }
+
+        function renderAssumptions() {
+          const rows = [["Производительность", $("metric-throughput")?.textContent || "-", "расчетная модель"], ["OEE", $("metric-oee")?.textContent || "-", "формула A/P/Q"], ["Узкое место", $("metric-bottleneck")?.textContent || "-", "расчет по загрузке и критичности"], ["Энергия", $("metric-energy")?.textContent || "-", "паспортная мощность + нагрузка"], ["Качество", $("risk-value")?.textContent || "-", "экспертная вероятность риска"]];
+          $("assumption-list").innerHTML = rows.map(([label, value, source]) => `<article class="assumption-row"><span>${safe(label)}</span><strong>${safe(value)}</strong><small>${safe(source)}</small></article>`).join("");
+        }
+
+        function renderPorts() {
+          $("integration-list").innerHTML = ports.map(([name, status, purpose]) => `<article class="integration-row"><span>${safe(status)}</span><strong>${safe(name)}</strong><small>${safe(purpose)}</small></article>`).join("");
+        }
+
+        function initExtensions() {
+          renderReadiness(); renderTemplates(); wireBuilder(); renderBuilder(); renderLibrary(); renderAssumptions(); renderPorts(); renderCommand();
+          document.addEventListener("click", (event) => { if (event.target && (event.target.id === "save-scenario" || event.target.id === "clear-scenarios")) setTimeout(renderCommand, 80); });
+          setInterval(renderAssumptions, 1400);
+        }
+        setTimeout(initExtensions, 0);
+      })();
+    </script>
   </body>
 </html>
