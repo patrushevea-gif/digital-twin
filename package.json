@@ -4,7 +4,7 @@
   "private": true,
   "description": "Digital twin foundation for a powder coating production line.",
   "scripts": {
-    "dev": "python -m http.server 5173 --directory apps/web",
+    "dev": "python -m http.server 5173 --directory .",
     "check": "node --check apps/web/app.js"
   },
   "keywords": [
