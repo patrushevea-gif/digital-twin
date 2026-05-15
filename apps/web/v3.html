@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PowderTwin | Digital Factory Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/apps/web/v3.css" />
+</head>
+<body>
+  <div class="app-shell" id="appShell">
+    <aside class="rail" aria-label="Навигация цифрового завода">
+      <div class="brand-block">
+        <div class="brand-mark">PT</div>
+        <div>
+          <span class="eyebrow">PowderTwin</span>
+          <strong>Digital Factory</strong>
+        </div>
+      </div>
+
+      <nav class="rail-nav">
+        <a href="#overview" class="active">Командный центр</a>
+        <a href="#line">Схема линии</a>
+        <a href="#ai">AI Copilot</a>
+        <a href="#studio">История и сценарии</a>
+        <a href="#data">Данные</a>
+      </nav>
+
+      <div class="rail-section">
+        <div class="section-caption">Заводы</div>
+        <div id="factoryList" class="factory-list"></div>
+      </div>
+
+      <button class="rail-help" id="helpButton" type="button">?</button>
+    </aside>
+
+    <main class="main">
+      <header class="topbar" id="overview">
+        <div class="title-block">
+          <span class="eyebrow">Factory 01 / Powder coating line</span>
+          <h1>Цифровой двойник линии порошковой краски</h1>
+          <p id="breadcrumb">Завод 01 / Цех покрытий / Линия порошковой краски</p>
+        </div>
+        <div class="top-actions">
+          <label>
+            <span>Рецептура</span>
+            <select id="recipeSelect"></select>
+          </label>
+          <button class="icon-button" id="resetButton" type="button" title="Сбросить модель">↺</button>
+          <button class="icon-button" id="logoutButton" type="button" title="Закрыть доступ">OUT</button>
+        </div>
+      </header>
+
+      <section class="kpi-row" id="kpiRow"></section>
+
+      <section class="command-grid">
+        <section class="line-panel" id="line">
+          <div class="panel-head">
+            <div>
+              <span class="eyebrow">Digital material flow</span>
+              <h2>Схема оборудования и поток партии</h2>
+            </div>
+            <div class="status-chip" id="lineStatus">offline model</div>
+          </div>
+          <div class="line-flow-wrap">
+            <div class="flow-backbone" aria-hidden="true"></div>
+            <div class="line-flow" id="lineFlow"></div>
+          </div>
+          <div class="control-deck" id="controlDeck">
+            <label><span>Интенсивность</span><input id="intensity" type="range" min="35" max="115" value="72"></label>
+            <label><span>Смена, ч</span><input id="shift" type="range" min="4" max="12" value="8"></label>
+            <label><span>Партия, кг</span><input id="batch" type="range" min="100" max="1200" step="50" value="500"></label>
+            <label><span>Качество</span><input id="qualityStrictness" type="range" min="40" max="95" value="65"></label>
+            <label class="switch-row"><input id="cleaning" type="checkbox" checked><span>Очистка включена</span></label>
+          </div>
+        </section>
+
+        <aside class="ai-panel" id="ai">
+          <div class="panel-head">
+            <div>
+              <span class="eyebrow">AI Copilot</span>
+              <h2>Вопросы к двойнику</h2>
+            </div>
+            <div class="live-dot">Agent-ready</div>
+          </div>
+          <div class="ai-summary" id="aiSummary"></div>
+          <div class="chat-log" id="chatLog"></div>
+          <div class="chat-box">
+            <input id="aiQuestion" type="text" placeholder="Спросите про узкое место, план, качество, энергию..." />
+            <button id="askAi" type="button">Спросить</button>
+          </div>
+        </aside>
+      </section>
+
+      <section class="detail-grid">
+        <article class="equipment-panel">
+          <div class="panel-head">
+            <div>
+              <span class="eyebrow" id="equipmentArea">Оборудование</span>
+              <h2 id="equipmentName">Экструдер</h2>
+            </div>
+            <div class="status-chip" id="equipmentStatus">RUN</div>
+          </div>
+          <div class="equipment-meta" id="equipmentMeta"></div>
+          <div class="gauge-list" id="gaugeList"></div>
+        </article>
+
+        <article class="scenario-panel">
+          <div class="panel-head">
+            <div>
+              <span class="eyebrow">Scenario Lab</span>
+              <h2>Что если изменить условия</h2>
+            </div>
+            <button class="soft-button" id="saveScenario" type="button">Сохранить</button>
+          </div>
+          <div class="scenario-form">
+            <label><span>База</span><select id="scenarioBase"></select></label>
+            <label><span>Рост плана, %</span><input id="scenarioPlan" type="number" value="100"></label>
+            <label><span>Доп. простой, мин</span><input id="scenarioDowntime" type="number" value="0"></label>
+            <label><span>Смен цвета</span><input id="scenarioColors" type="number" value="1"></label>
+          </div>
+          <div class="scenario-result" id="scenarioResult"></div>
+        </article>
+
+        <article class="insight-panel">
+          <div class="panel-head">
+            <div>
+              <span class="eyebrow">Operational focus</span>
+              <h2>Куда смотреть сейчас</h2>
+            </div>
+          </div>
+          <div id="focusList" class="focus-list"></div>
+        </article>
+      </section>
+
+      <section class="studio" id="studio">
+        <div class="section-title">
+          <div>
+            <span class="eyebrow">Data Studio</span>
+            <h2>История, эталон и ручной ввод</h2>
+          </div>
+          <button class="soft-button" id="csvTemplate" type="button">CSV шаблон</button>
+        </div>
+        <div class="studio-grid">
+          <article class="studio-card">
+            <div class="card-head">
+              <h3>Исторические смены</h3>
+              <span id="historyCount">0 записей</span>
+            </div>
+            <div class="history-list" id="historyList"></div>
+          </article>
+
+          <article class="studio-card">
+            <h3>Ввод новой смены</h3>
+            <div class="manual-form">
+              <label><span>Дата</span><input id="histDate" type="date"></label>
+              <label><span>Период</span><select id="histPeriod"><option>Смена A</option><option>Смена B</option><option>Сутки</option></select></label>
+              <label><span>Продукт</span><select id="histRecipe"></select></label>
+              <label><span>Партия, кг</span><input id="histBatch" type="number" value="500"></label>
+              <label><span>Выпуск, кг</span><input id="histOutput" type="number" value="2100"></label>
+              <label><span>Брак, кг</span><input id="histReject" type="number" value="28"></label>
+              <label><span>Простой, мин</span><input id="histDowntime" type="number" value="35"></label>
+              <label><span>Энергия, кВт·ч</span><input id="histEnergy" type="number" value="620"></label>
+              <label><span>Качество, %</span><input id="histQuality" type="number" value="97"></label>
+              <button class="primary-action" id="addHistory" type="button">Добавить факт</button>
+            </div>
+          </article>
+
+          <article class="studio-card" id="data">
+            <h3>Готовность данных</h3>
+            <div class="readiness" id="readinessList"></div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <section class="auth-overlay" id="authOverlay" hidden>
+    <form class="auth-card" id="authForm">
+      <span class="eyebrow">Private MVP</span>
+      <h2>Закрытый цифровой завод</h2>
+      <p>Минимальный вход по коду. Без личных кабинетов и без входа через аккаунт Vercel.</p>
+      <label><span>Код доступа</span><input id="authCode" type="password" placeholder="Введите код"></label>
+      <label class="remember"><input id="authRemember" type="checkbox" checked> <span>Запомнить на этом устройстве</span></label>
+      <button class="primary-action" type="submit">Войти</button>
+      <div class="auth-error" id="authError"></div>
+    </form>
+  </section>
+
+  <section class="help-overlay" id="helpOverlay" hidden>
+    <div class="help-panel">
+      <div class="help-head">
+        <div>
+          <span class="eyebrow">Digital twin guide</span>
+          <h2>Как работает PowderTwin</h2>
+        </div>
+        <button class="icon-button" id="helpClose" type="button">×</button>
+      </div>
+      <div class="help-content" id="helpContent"></div>
+    </div>
+  </section>
+
+  <script src="/apps/web/v3.js"></script>
+</body>
+</html>
