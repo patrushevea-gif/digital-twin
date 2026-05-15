@@ -1,5 +1,7 @@
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_MODEL = "gpt-5.5";
+const AGENT_PLATFORM_CHAT_URL = "https://api.agentplatform.ru/v1/chat/completions";
+const DEFAULT_AGENT_PLATFORM_MODEL = "openai/gpt-5.4";
 const DEFAULT_PROVIDER = "openai";
 
 const SYSTEM_PROMPT = `
@@ -107,8 +109,9 @@ function resolveAgentPlatformUrl() {
   if (explicit) return explicit;
 
   const base = process.env.AGENT_PLATFORM_BASE_URL || process.env.OPENAI_BASE_URL;
-  if (!base) return "";
-  return `${base.replace(/\/+$/, "")}/v1/responses`;
+  if (base) return `${base.replace(/\/+$/, "")}/v1/chat/completions`;
+
+  return AGENT_PLATFORM_CHAT_URL;
 }
 
 function keyStatus(apiKey, source, provider) {
@@ -226,8 +229,14 @@ function responsesPayload(model, userInput, includeOpenAiOptions = false) {
   return payload;
 }
 
-function agentPayload(body, model, userInput) {
-  const mode = String(process.env.AGENT_PLATFORM_PAYLOAD_MODE || "generic").toLowerCase();
+function agentPayloadMode(endpoint = "") {
+  const configured = String(process.env.AGENT_PLATFORM_PAYLOAD_MODE || "").toLowerCase().trim();
+  if (configured) return configured;
+  return endpoint.includes("/chat/completions") ? "chat" : "generic";
+}
+
+function agentPayload(body, model, userInput, endpoint) {
+  const mode = agentPayloadMode(endpoint);
   if (mode === "responses") return responsesPayload(model, userInput, false);
 
   if (mode === "chat") {
@@ -286,11 +295,9 @@ async function callAgentPlatform(apiKey, model, body) {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
-      "x-api-key": apiKey,
-      apikey: apiKey,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(agentPayload(body, model, buildUserInput(body))),
+    body: JSON.stringify(agentPayload(body, model, buildUserInput(body), endpoint)),
   });
 
   const data = await response.json().catch(() => ({}));
@@ -303,7 +310,7 @@ module.exports = async function handler(req, res) {
   const apiKey = resolvedKey.value;
   const key = keyStatus(apiKey, resolvedKey.source, provider);
   const model = provider === "agent_platform"
-    ? process.env.AGENT_PLATFORM_MODEL || process.env.OPENAI_MODEL || DEFAULT_MODEL
+    ? process.env.AGENT_PLATFORM_MODEL || DEFAULT_AGENT_PLATFORM_MODEL
     : process.env.OPENAI_MODEL || DEFAULT_MODEL;
   const endpoint = provider === "agent_platform" ? resolveAgentPlatformUrl() : OPENAI_RESPONSES_URL;
 
@@ -315,7 +322,7 @@ module.exports = async function handler(req, res) {
       keyEnv: key.source,
       model,
       endpoint,
-      payloadMode: provider === "agent_platform" ? process.env.AGENT_PLATFORM_PAYLOAD_MODE || "generic" : "responses",
+      payloadMode: provider === "agent_platform" ? agentPayloadMode(endpoint) : "responses",
       hint: key.ok && (provider === "openai" || Boolean(endpoint))
         ? "AI endpoint is configured. Use POST with the twin context."
         : provider === "agent_platform"

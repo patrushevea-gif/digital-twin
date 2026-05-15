@@ -17,16 +17,20 @@
 3. Добавить переменные:
    - `AI_PROVIDER` = `agent_platform`.
    - `AGENT_PLATFORM_API_KEY` = ваш ключ AgentPlatform, например формата `sk-ap-...`.
-   - `AGENT_PLATFORM_API_URL` = endpoint вашего агента или gateway.
-4. Если AgentPlatform дает только base URL, можно вместо полного endpoint указать:
-   - `AGENT_PLATFORM_BASE_URL` = base URL, а система добавит `/v1/responses`.
-5. Если нужен конкретный формат payload:
-   - `AGENT_PLATFORM_PAYLOAD_MODE` = `generic`, `responses` или `chat`.
-6. Опционально указать модель:
-   - `AGENT_PLATFORM_MODEL` = модель или идентификатор агента, если это требуется вашим endpoint.
-7. Выбрать окружения `Production`, `Preview`, `Development` по необходимости.
-8. Нажать `Save`.
-9. Сделать redeploy последнего деплоя или новый push в `main`.
+4. Endpoint AgentPlatform уже задан в коде по умолчанию:
+   - `https://api.agentplatform.ru/v1/chat/completions`.
+5. Если endpoint изменится, можно переопределить его переменной:
+   - `AGENT_PLATFORM_API_URL` = полный endpoint AgentPlatform.
+6. Если AgentPlatform дает только base URL, можно вместо полного endpoint указать:
+   - `AGENT_PLATFORM_BASE_URL` = base URL, а система добавит `/v1/chat/completions`.
+7. Формат payload по умолчанию уже `chat`, как в примере AgentPlatform:
+   - `POST /v1/chat/completions`
+   - `messages: [{ role, content }]`
+8. Модель по умолчанию:
+   - `AGENT_PLATFORM_MODEL` = `openai/gpt-5.4`.
+9. Выбрать окружения `Production`, `Preview`, `Development` по необходимости.
+10. Нажать `Save`.
+11. Сделать redeploy последнего деплоя или новый push в `main`.
 
 Если `sk-ap-...` уже лежит в `OPENAI_API_KEY`, bridge автоматически переключится
 в режим AgentPlatform. Но для порядка лучше перенести такой ключ в
@@ -38,6 +42,8 @@
 - принимает вопрос и текущий контекст цифрового двойника из браузера;
 - отправляет их на AgentPlatform с серверной стороны;
 - поддерживает ключи `sk-ap-...`;
+- по умолчанию вызывает `https://api.agentplatform.ru/v1/chat/completions`;
+- по умолчанию использует модель `openai/gpt-5.4`;
 - умеет читать типовые ответы вида `answer`, `output`, `message`, `text`,
   `choices[0].message.content` и `output_text`;
 - `GET /api/ai` показывает диагностику: провайдер, найденную переменную ключа,
@@ -78,11 +84,11 @@
 
 ## Рекомендуемая модель
 
-Для текущего MVP лучше начать с `gpt-5.5`: это актуальная модель для production workflow,
-tool-heavy agents, grounded assistants и задач, где важны качество вывода и надежность.
+Для текущего MVP через AgentPlatform используем `openai/gpt-5.4`, потому что именно такое
+имя модели указано в документации AgentPlatform для chat completions.
 
-Для более глубокого анализа, когда появятся реальные исторические данные, можно переключить:
+Для более глубокого анализа, когда появятся реальные исторические данные, можно протестировать:
 
-- `gpt-5.5` - основной режим для wow-демо, диагностики и агентного анализа;
-- `gpt-5.4` - баланс качества и стоимости, если нужно снизить расходы;
-- более легкую модель GPT-5 family - для быстрых дешевых ответов после тестов на реальных данных.
+- `openai/gpt-5.4` - основной режим MVP;
+- более сильную модель AgentPlatform, если она появится в списке доступных;
+- более легкую модель AgentPlatform для дешевой проверки CSV/Excel и классификации простоев.
