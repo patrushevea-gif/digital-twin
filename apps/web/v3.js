@@ -11,13 +11,11 @@ const recipes = [
 
 const equipment = [
   { id: "raw-storage", name: "Склад сырья", short: "Сырье", area: "Подготовка", role: "inventory", cap: 950, cycle: 6, power: 4, crit: 42 },
-  { id: "weighing", name: "Дозирование и взвешивание", short: "Дозатор", area: "Подготовка", role: "batching", cap: 520, cycle: 18, power: 7, crit: 68 },
+  { id: "weighing", name: "Зона навески", short: "Зона навески", area: "Подготовка", role: "batching", cap: 520, cycle: 18, power: 7, crit: 68 },
   { id: "premixer", name: "Предварительный смеситель", short: "Смеситель", area: "Смешение", role: "mixing", cap: 500, cycle: 22, power: 18, crit: 61 },
+  { id: "intermediate-qc", name: "ОТК промежуточная проба", short: "ОТК проба", area: "Контроль качества", role: "quality-gate", cap: 520, cycle: 12, power: 3, crit: 62 },
   { id: "extruder", name: "Экструдер", short: "Экструдер", area: "Плавление", role: "extrusion", cap: 410, cycle: 26, power: 96, crit: 94 },
-  { id: "cooling-belt", name: "Охлаждающая лента", short: "Охлаждение", area: "Охлаждение", role: "cooling", cap: 450, cycle: 14, power: 22, crit: 72 },
-  { id: "crusher", name: "Дробилка", short: "Дробилка", area: "Измельчение", role: "crushing", cap: 430, cycle: 10, power: 31, crit: 74 },
   { id: "mill-classifier", name: "Мельница и классификатор", short: "Мельница", area: "Измельчение", role: "milling", cap: 360, cycle: 32, power: 118, crit: 97 },
-  { id: "sieve", name: "Контрольное сито", short: "Сито", area: "Качество", role: "screening", cap: 390, cycle: 16, power: 13, crit: 77 },
   { id: "packing", name: "Фасовка", short: "Фасовка", area: "Готовая продукция", role: "packing", cap: 470, cycle: 20, power: 11, crit: 58 },
   { id: "quality-lab", name: "Лаборатория ОТК", short: "ОТК", area: "Качество", role: "quality", cap: 260, cycle: 28, power: 5, crit: 81 },
 ];
@@ -39,7 +37,7 @@ const state = {
   qualityStrictness: 65,
   cleaning: true,
   lineView: "flow",
-  history: JSON.parse(localStorage.getItem("powdertwin.history.v3") || "null") || historySeed,
+  history: normalizeHistory(JSON.parse(localStorage.getItem("powdertwin.history.v3") || "null") || historySeed),
   selectedHistoryId: localStorage.getItem("powdertwin.history.selected.v3") || "h1",
   scenarios: JSON.parse(localStorage.getItem("powdertwin.scenarios.v3") || "[]"),
   chat: JSON.parse(localStorage.getItem("powdertwin.chat.v3") || "null") || [
@@ -72,7 +70,7 @@ function equipmentState(item) {
   const recipe = currentRecipe();
   const demand = recipe.nominal * (state.intensity / 100) * recipe.complexity * clamp(state.batch / 650, 0.75, 1.24);
   const modifier = item.role === "quality" ? 0.65 : item.role === "inventory" ? 0.52 : 1;
-  const cleaningBonus = state.cleaning && ["extruder", "mill-classifier", "sieve"].includes(item.id) ? 5 : 0;
+  const cleaningBonus = state.cleaning && ["extruder", "mill-classifier"].includes(item.id) ? 5 : 0;
   const load = clamp((demand / item.cap) * 100 * modifier - cleaningBonus + item.crit * 0.08, 8, 126);
   const risk = clamp(load * 0.48 + item.crit * 0.32 + recipe.risk * state.qualityStrictness * 0.45 - (state.cleaning ? 8 : 0), 4, 99);
   const status = load > 96 || risk > 84 ? "constraint" : "running";
@@ -106,6 +104,13 @@ function histOee(record) {
 
 function selectedHistory() {
   return state.history.find((item) => item.id === state.selectedHistoryId) || state.history[0] || historySeed[0];
+}
+
+function normalizeHistory(records) {
+  return (Array.isArray(records) ? records : historySeed).map((record) => ({
+    ...record,
+    bottleneck: record.bottleneck === "Сито" ? "ОТК / смена цвета" : record.bottleneck,
+  }));
 }
 
 function modelSnapshot() {
@@ -163,7 +168,7 @@ function scenarioResult() {
   const output = recipe.nominal * availableHours * (plan / 100) * clamp(state.batch / 500, 0.86, 1.14) * quality;
   const oee = clamp((availableHours / state.shift) * (plan / 100) * quality, 0.35, 0.98);
   const energy = (base?.energy || etalon.energy) * clamp(output / Math.max(base?.output || etalon.output, 1), 0.45, 1.6);
-  const bottleneck = downtime > 45 ? "Мельница / простой" : colors > 2 ? "Сито / очистка" : recipe.complexity > 1.2 ? "Мельница + ОТК" : "Экструдер";
+  const bottleneck = downtime > 45 ? "Мельница / простой" : colors > 2 ? "ОТК / смена цвета" : recipe.complexity > 1.2 ? "Мельница + ОТК" : "Экструдер";
   return { base, plan, downtime, colors, totalDowntime, quality, output, oee, energy, bottleneck };
 }
 
