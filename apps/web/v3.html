@@ -14,9 +14,9 @@
     <aside class="rail" aria-label="Навигация цифрового завода">
       <div class="brand-block">
         <div class="brand-mark">PT</div>
-        <div>
+        <div class="brand-copy">
           <span class="eyebrow">PowderTwin</span>
-          <strong>Digital Factory</strong>
+          <strong>Цифровой завод</strong>
         </div>
       </div>
 
@@ -24,6 +24,7 @@
         <a href="#overview" class="active">Командный центр</a>
         <a href="#line">Схема линии</a>
         <a href="#ai">AI Copilot</a>
+        <a href="#architecture">Карта проекта</a>
         <a href="#studio">История и сценарии</a>
         <a href="#data">Данные</a>
       </nav>
@@ -39,7 +40,7 @@
     <main class="main">
       <header class="topbar" id="overview">
         <div class="title-block">
-          <span class="eyebrow">Factory 01 / Powder coating line</span>
+          <span class="eyebrow">Завод 01 / Линия порошковой краски</span>
           <h1>Цифровой двойник линии порошковой краски</h1>
           <p id="breadcrumb">Завод 01 / Цех покрытий / Линия порошковой краски</p>
         </div>
@@ -58,15 +59,22 @@
       <section class="command-grid">
         <section class="line-panel" id="line">
           <div class="panel-head">
-            <div>
-              <span class="eyebrow">Digital material flow</span>
-              <h2>Схема оборудования и поток партии</h2>
+          <div>
+            <span class="eyebrow">Digital material flow</span>
+            <h2>Схема оборудования и поток партии</h2>
+          </div>
+            <div class="panel-tools">
+              <div class="view-switch" aria-label="Режим просмотра линии">
+                <button class="active" id="flowViewButton" type="button">Пульт линии</button>
+                <button id="schemeViewButton" type="button">Схема связей</button>
+              </div>
+              <div class="status-chip" id="lineStatus">модель</div>
             </div>
-            <div class="status-chip" id="lineStatus">offline model</div>
           </div>
           <div class="line-flow-wrap">
             <div class="flow-backbone" aria-hidden="true"></div>
             <div class="line-flow" id="lineFlow"></div>
+            <div class="line-map" id="lineMap" hidden></div>
           </div>
           <div class="control-deck" id="controlDeck">
             <label><span>Интенсивность</span><input id="intensity" type="range" min="35" max="115" value="72"></label>
@@ -81,11 +89,12 @@
           <div class="panel-head">
             <div>
               <span class="eyebrow">AI Copilot</span>
-              <h2>Вопросы к двойнику</h2>
+              <h2>AI аналитик линии</h2>
             </div>
-            <div class="live-dot">Agent-ready</div>
+            <div class="live-dot">ИИ готов</div>
           </div>
           <div class="ai-summary" id="aiSummary"></div>
+          <div class="ai-prompts" id="aiPrompts"></div>
           <div class="chat-log" id="chatLog"></div>
           <div class="chat-box">
             <input id="aiQuestion" type="text" placeholder="Спросите про узкое место, план, качество, энергию..." />
@@ -122,6 +131,7 @@
             <label><span>Смен цвета</span><input id="scenarioColors" type="number" value="1"></label>
           </div>
           <div class="scenario-result" id="scenarioResult"></div>
+          <div class="decision-passport" id="decisionPassport"></div>
         </article>
 
         <article class="insight-panel">
@@ -133,6 +143,54 @@
           </div>
           <div id="focusList" class="focus-list"></div>
         </article>
+      </section>
+
+      <section class="project-map" id="architecture">
+        <div class="section-title">
+          <div>
+            <span class="eyebrow">Архитектура продукта</span>
+            <h2>Карта цифрового двойника</h2>
+          </div>
+          <div class="status-chip">Этап 1 · Line Twin Demo</div>
+        </div>
+
+        <div class="project-core">
+          <article>
+            <span class="eyebrow">Что уже собрано</span>
+            <h3>Демонстрационный cockpit линии</h3>
+            <p>Сейчас это не финальный двойник завода, а рабочее ядро Line Twin MVP: схема оборудования, рецептуры, параметры смены, расчет KPI, bottleneck, история, минимальный вход и место для AI-аналитика.</p>
+          </article>
+          <article>
+            <span class="eyebrow">Главная формула MVP</span>
+            <h3>Схема линии + сценарий + расчет + AI</h3>
+            <p>Первый двойник отвечает на один главный вопрос: что ограничивает выпуск выбранной смены и что будет, если изменить сценарий.</p>
+          </article>
+        </div>
+
+        <div class="layer-stack" aria-label="Уровни цифрового двойника">
+          <article><span>01</span><strong>Digital Factory Platform</strong><small>Два завода, карта активов, общая аналитика и будущие линии.</small></article>
+          <article><span>02</span><strong>Factory Twin</strong><small>Один завод: цеха, линии, зоны, KPI и узкие места.</small></article>
+          <article class="active"><span>03</span><strong>Line Twin</strong><small>Текущий фокус: линия порошковой краски, смены, рецептуры, сценарии.</small></article>
+          <article><span>04</span><strong>Process Twin</strong><small>Дозирование, смешение, экструзия, помол, просев, фасовка, ОТК.</small></article>
+          <article><span>05</span><strong>AI Intelligence Layer</strong><small>Объясняет, сравнивает, ищет ограничения и предлагает решения.</small></article>
+        </div>
+
+        <div class="product-pages">
+          <article><strong>Старт</strong><small>Главные KPI, AI Brief, схема линии, быстрый сценарий.</small></article>
+          <article><strong>Линия</strong><small>Оборудование, маршрут, bottleneck, качество, энергия.</small></article>
+          <article><strong>Оборудование</strong><small>Роль, мощность, критичность, загрузка и недостающие данные.</small></article>
+          <article><strong>Рецептуры</strong><small>Сложность, скорость, риск качества, очистка и смена цвета.</small></article>
+          <article><strong>Расчет смены</strong><small>Выпуск, OEE, энергия, риск качества и паспорт решения.</small></article>
+          <article><strong>Сравнение</strong><small>Сценарий А против B: выпуск, риск, энергия, потери.</small></article>
+          <article><strong>Data Studio</strong><small>История, ручной ввод, проверка данных и калибровка модели.</small></article>
+        </div>
+
+        <div class="ai-roles">
+          <article><strong>AI Brief</strong><small>Коротко подсвечивает, куда смотреть сейчас.</small></article>
+          <article><strong>AI Chat</strong><small>Отвечает на вопросы о линии и сценариях.</small></article>
+          <article><strong>AI Passport</strong><small>Формирует вывод: проблема, причина, эффект, риск.</small></article>
+          <article><strong>AI Data Analyst</strong><small>Ищет закономерности, выбросы и расхождения факт/модель.</small></article>
+        </div>
       </section>
 
       <section class="studio" id="studio">

@@ -38,6 +38,7 @@ const state = {
   batch: 500,
   qualityStrictness: 65,
   cleaning: true,
+  lineView: "flow",
   history: JSON.parse(localStorage.getItem("powdertwin.history.v3") || "null") || historySeed,
   selectedHistoryId: localStorage.getItem("powdertwin.history.selected.v3") || "h1",
   scenarios: JSON.parse(localStorage.getItem("powdertwin.scenarios.v3") || "[]"),
@@ -195,11 +196,13 @@ function renderKpi(model) {
     ["Выпуск", `${fmt(model.throughput)} кг`, `${state.shift} ч · ${currentRecipe().name}`],
     ["OEE", `${Math.round(model.oee * 100)}%`, `${Math.round(model.availability * 100)} / ${Math.round(model.performance * 100)} / ${Math.round(model.quality * 100)}`],
     ["Узкое место", model.bottleneck.item.short, `${Math.round(model.bottleneck.state.load)}% загрузка`],
+    ["Риск качества", `${Math.round((1 - model.quality) * 100)}%`, `${currentRecipe().name}`],
     ["Энергия", `${fmt(model.energy)} кВт·ч`, `${(model.energy / Math.max(model.throughput, 1)).toFixed(2)} кВт·ч/кг`],
   ] : [
     ["Завод 02", "контур", "ожидает данных"],
     ["Линии", "0", "оборудование не заведено"],
     ["OEE", "-", "нет модели"],
+    ["Риск качества", "-", "нет расчетов"],
     ["Энергия", "-", "нет данных"],
   ];
 
@@ -214,6 +217,15 @@ function renderKpi(model) {
 
 function renderLine(model) {
   const rows = model?.rows || [];
+  const isScheme = state.lineView === "scheme";
+  $("line").classList.toggle("scheme-mode", isScheme);
+  $("lineFlow").hidden = isScheme;
+  $("lineMap").hidden = !isScheme;
+  $("controlDeck").hidden = isScheme;
+  $("flowViewButton").classList.toggle("active", !isScheme);
+  $("schemeViewButton").classList.toggle("active", isScheme);
+  $("lineStatus").textContent = isScheme ? "схема связей" : (currentFactory().status === "active" ? "расчетная модель" : "планируется");
+
   $("lineFlow").innerHTML = lineEquipment().map((item, index) => {
     const row = rows.find((entry) => entry.item.id === item.id) || { state: equipmentState(item) };
     const isActive = item.id === state.equipment;
@@ -229,6 +241,46 @@ function renderLine(model) {
   }).join("") || `<div class="equipment-node"><strong>Контур завода готов</strong><small>Оборудование добавим после данных</small></div>`;
 
   document.querySelectorAll("[data-equipment]").forEach((button) => {
+    button.onclick = () => {
+      state.equipment = button.dataset.equipment;
+      render();
+    };
+  });
+
+  renderLineMap(model);
+}
+
+function renderLineMap(model) {
+  const route = lineEquipment().filter((item) => item.id !== "quality-lab");
+  const quality = lineEquipment().find((item) => item.id === "quality-lab");
+  const rows = model?.rows || [];
+  const node = (item, index, extraClass = "") => {
+    const row = rows.find((entry) => entry.item.id === item.id) || { state: equipmentState(item) };
+    const active = item.id === state.equipment ? "active" : "";
+    const constraint = model?.bottleneck?.item.id === item.id || row.state.status === "constraint" ? "constraint" : "";
+    return `
+      <button class="scheme-node ${active} ${constraint} ${extraClass}" data-equipment="${item.id}" type="button">
+        <span class="scheme-index">${index + 1}</span>
+        <strong>${item.short}</strong>
+        <small>${item.area}</small>
+        <small>${Math.round(row.state.load)}% загрузка · ${item.cap} кг/ч</small>
+      </button>
+    `;
+  };
+  const routeNodes = route.slice(0, 5).map((item, index) => node(item, index)).join("");
+  const routeNodes2 = route.slice(5).map((item, index) => node(item, index + 5)).join("");
+  const qualityNode = quality ? node(quality, route.length, "quality-node") : "";
+
+  $("lineMap").innerHTML = route.length ? `
+    <div class="scheme-row">${routeNodes}</div>
+    <div class="scheme-row">${routeNodes2}</div>
+    <div class="scheme-branch">
+      <div class="branch-line" aria-hidden="true"></div>
+      ${qualityNode}
+    </div>
+  ` : `<div class="scheme-node"><strong>Контур завода готов</strong><small>Связи оборудования добавим после данных.</small></div>`;
+
+  document.querySelectorAll("#lineMap [data-equipment]").forEach((button) => {
     button.onclick = () => {
       state.equipment = button.dataset.equipment;
       render();
@@ -292,12 +344,26 @@ function renderFocus(model) {
 
 function renderAi(model) {
   const actual = historySnapshot();
+  const brief = model
+    ? `Сейчас ограничивает ${model.bottleneck.item.short}. Риск качества ${Math.round((1 - model.quality) * 100)}%, лучший быстрый шаг: проверить скорость узла и эффект очистки.`
+    : "Для выбранного завода пока нет активной линии. Добавьте оборудование и маршрут.";
   const cards = [
+    ["AI Brief", brief],
     ["Боттлнек", model ? `${model.bottleneck.item.short}: ${Math.round(model.bottleneck.state.risk)}% риска` : "нет активной линии"],
     ["Калибровка", `Факт vs модель: ${model ? fmt(actual.output - model.throughput) : 0} кг`],
-    ["Следующий вопрос", "Почему падает OEE или что будет при росте плана?"],
   ];
   $("aiSummary").innerHTML = cards.map((card) => `<article><strong>${card[0]}</strong><small>${card[1]}</small></article>`).join("");
+  const prompts = [
+    "Что ограничивает выпуск?",
+    "Какой сценарий лучше?",
+    "Какие данные нужны?",
+    "Что даст очистка?",
+    "Почему OEE ниже эталона?"
+  ];
+  $("aiPrompts").innerHTML = prompts.map((prompt) => `<button type="button" data-ai-prompt="${prompt}">${prompt}</button>`).join("");
+  document.querySelectorAll("[data-ai-prompt]").forEach((button) => {
+    button.onclick = () => submitAiQuestion(button.dataset.aiPrompt);
+  });
   $("chatLog").innerHTML = state.chat.slice(-8).map((message) => `
     <div class="chat-message ${message.role === "user" ? "user" : ""}">
       <small>${message.role === "user" ? "Вы" : "AI Copilot"}</small>
@@ -315,6 +381,20 @@ function renderScenario() {
     ["OEE", `${Math.round(result.oee * 100)}%`],
     ["Узкое место", result.bottleneck],
   ].map((entry) => `<article><small>${entry[0]}</small><strong>${entry[1]}</strong></article>`).join("");
+
+  const qualityRisk = Math.round((1 - result.quality) * 100);
+  const delta = result.base ? result.output - result.base.output : 0;
+  $("decisionPassport").innerHTML = `
+    <span class="eyebrow">AI Passport of Decision</span>
+    <h3>Паспорт решения</h3>
+    <div class="decision-grid">
+      <article><small>Проблема</small><strong>${result.bottleneck}</strong></article>
+      <article><small>Причина</small><strong>${result.colors > 2 ? "частая смена цвета" : result.downtime > 45 ? "дополнительный простой" : "ограничение мощности"}</strong></article>
+      <article><small>Эффект</small><strong>${delta >= 0 ? "+" : ""}${fmt(delta)} кг к базе</strong></article>
+      <article><small>Риск</small><strong>${qualityRisk}% по качеству</strong></article>
+    </div>
+    <p>Проверить на заводе: фактическую скорость узкого места, длительность очистки, потери при смене цвета и отклонения по гранулометрии.</p>
+  `;
 }
 
 function renderHistory() {
@@ -356,11 +436,12 @@ function renderReadiness() {
 
 function renderHelp() {
   const items = [
-    ["Цель", "Собрать offline MVP цифрового двойника линии порошковой краски внутри модели двух заводов."],
-    ["Схема", "Центральный экран показывает оборудование по ходу материала. Узкое место подсвечивается теплым цветом."],
-    ["История", "Можно вручную добавлять смены и сравнивать факт с моделью и эталоном."],
-    ["Сценарии", "Меняйте план, простои и смены цвета, чтобы увидеть выпуск, OEE, энергию и ограничение."],
+    ["Цель", "Собрать Line Twin MVP: оборудование, рецептура, смена, расчет выпуска, bottleneck и рекомендация."],
+    ["Старт", "Первый экран сразу показывает KPI, схему линии, быстрые параметры смены и AI Brief."],
+    ["Схема линии", "Переключатель Пульт линии / Схема связей показывает либо расчетную панель, либо маршрут оборудования."],
+    ["Паспорт решения", "После сценария система формирует проблему, причину, эффект, риск и что проверить на заводе."],
     ["AI", "AI Copilot получает текущий контекст двойника и отвечает через серверный endpoint /api/ai. Ключ хранится в Vercel."],
+    ["Карта проекта", "Ниже стартового экрана показаны 5 уровней: Platform, Factory Twin, Line Twin, Process Twin и AI Layer."],
     ["Данные", "Пока значения расчетные. Для точности нужны паспорта оборудования, времена операций, простои, качество и энергия."],
   ];
   $("helpContent").innerHTML = items.map((item) => `<article><h3>${item[0]}</h3><p>${item[1]}</p></article>`).join("");
@@ -370,7 +451,7 @@ function render() {
   const factory = currentFactory();
   const model = metrics();
   $("breadcrumb").textContent = `${factory.name} / ${factory.area} / ${factory.line}`;
-  $("lineStatus").textContent = factory.status === "active" ? "offline model" : "planned";
+  $("lineStatus").textContent = factory.status === "active" ? "расчетная модель" : "планируется";
   renderFactories();
   renderKpi(model);
   renderLine(model);
@@ -416,6 +497,22 @@ async function askAi(question) {
   return data.answer || "ИИ вернул пустой ответ.";
 }
 
+async function submitAiQuestion(question) {
+  const cleanQuestion = (question || $("aiQuestion").value).trim();
+  if (!cleanQuestion) return;
+  $("aiQuestion").value = "";
+  state.chat.push({ role: "user", text: cleanQuestion }, { role: "assistant", text: "Подключаю AI Agent к текущему состоянию линии..." });
+  saveState();
+  render();
+  try {
+    state.chat[state.chat.length - 1].text = await askAi(cleanQuestion);
+  } catch (error) {
+    state.chat[state.chat.length - 1].text = `${localAnswer(cleanQuestion)}\n\n${error.message}`;
+  }
+  saveState();
+  render();
+}
+
 function initControls() {
   $("recipeSelect").innerHTML = recipes.map((recipe) => `<option value="${recipe.id}">${recipe.name}</option>`).join("");
   $("histRecipe").innerHTML = $("recipeSelect").innerHTML;
@@ -423,6 +520,14 @@ function initControls() {
   $("histRecipe").value = state.recipe;
   $("histDate").value = new Date().toISOString().slice(0, 10);
   $("scenarioBase").innerHTML = `<option value="model">Текущая модель</option><option value="history">Выбранная смена</option><option value="average">Средний период</option>`;
+  $("flowViewButton").onclick = () => {
+    state.lineView = "flow";
+    render();
+  };
+  $("schemeViewButton").onclick = () => {
+    state.lineView = "scheme";
+    render();
+  };
 
   ["intensity", "shift", "batch", "qualityStrictness"].forEach((id) => {
     $(id).value = state[id];
@@ -486,19 +591,7 @@ function initControls() {
     setTimeout(() => URL.revokeObjectURL(link.href), 500);
   };
   $("askAi").onclick = async () => {
-    const question = $("aiQuestion").value.trim();
-    if (!question) return;
-    $("aiQuestion").value = "";
-    state.chat.push({ role: "user", text: question }, { role: "assistant", text: "Подключаю AI Agent к текущему состоянию линии..." });
-    saveState();
-    render();
-    try {
-      state.chat[state.chat.length - 1].text = await askAi(question);
-    } catch (error) {
-      state.chat[state.chat.length - 1].text = `${localAnswer(question)}\n\n${error.message}`;
-    }
-    saveState();
-    render();
+    await submitAiQuestion();
   };
   $("aiQuestion").onkeydown = (event) => {
     if (event.key === "Enter") $("askAi").click();
