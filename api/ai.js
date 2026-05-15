@@ -1,5 +1,6 @@
 const OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses";
 const DEFAULT_MODEL = "gpt-5.5";
+const DEFAULT_PROVIDER = "openai";
 
 const SYSTEM_PROMPT = `
 Ты AI-аналитик цифрового двойника линии производства порошковой краски.
@@ -38,18 +39,83 @@ function extractText(data) {
   return chunks.join("\n").trim();
 }
 
-function resolveApiKey() {
+function extractAgentText(data) {
+  if (typeof data === "string") return data.trim();
+  if (!data || typeof data !== "object") return "";
+
+  const direct = [
+    data.answer,
+    data.output,
+    data.result,
+    data.message,
+    data.text,
+    data.content,
+    data.response,
+    data.data?.answer,
+    data.data?.output,
+    data.data?.message,
+    data.data?.text,
+  ];
+
+  for (const value of direct) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+
+  const choice = data.choices?.[0]?.message?.content || data.choices?.[0]?.text;
+  if (typeof choice === "string" && choice.trim()) return choice.trim();
+
+  return extractText(data);
+}
+
+function normalizeProvider() {
+  const configured = String(process.env.AI_PROVIDER || "").toLowerCase().trim();
+  if (["agent", "agent_platform", "agentplatform"].includes(configured)) return "agent_platform";
+  if (configured === "openai") return "openai";
+
+  const openAiKey = process.env.OPENAI_API_KEY || "";
+  if (
+    process.env.AGENT_PLATFORM_API_KEY ||
+    process.env.AGENT_PLATFORM_API_URL ||
+    process.env.AGENT_PLATFORM_BASE_URL ||
+    openAiKey.startsWith("sk-ap-")
+  ) {
+    return "agent_platform";
+  }
+
+  return DEFAULT_PROVIDER;
+}
+
+function resolveApiKey(provider) {
+  if (provider === "agent_platform") {
+    if (process.env.AGENT_PLATFORM_API_KEY) {
+      return { value: process.env.AGENT_PLATFORM_API_KEY, source: "AGENT_PLATFORM_API_KEY" };
+    }
+    if (process.env.OPENAI_API_KEY) {
+      return { value: process.env.OPENAI_API_KEY, source: "OPENAI_API_KEY" };
+    }
+    return { value: "", source: null };
+  }
+
   if (process.env.OPENAI_API_KEY) {
     return { value: process.env.OPENAI_API_KEY, source: "OPENAI_API_KEY" };
-  }
-  if (process.env.AGENT_PLATFORM_API_KEY) {
-    return { value: process.env.AGENT_PLATFORM_API_KEY, source: "AGENT_PLATFORM_API_KEY" };
   }
   return { value: "", source: null };
 }
 
-function keyStatus(apiKey, source) {
+function resolveAgentPlatformUrl() {
+  const explicit = process.env.AGENT_PLATFORM_API_URL || process.env.AGENT_PLATFORM_URL;
+  if (explicit) return explicit;
+
+  const base = process.env.AGENT_PLATFORM_BASE_URL || process.env.OPENAI_BASE_URL;
+  if (!base) return "";
+  return `${base.replace(/\/+$/, "")}/v1/responses`;
+}
+
+function keyStatus(apiKey, source, provider) {
   if (!apiKey) return { ok: false, type: "missing", source };
+  if (provider === "agent_platform") {
+    return { ok: true, type: apiKey.startsWith("sk-ap-") ? "agent-platform-key" : "api-key", source };
+  }
   if (apiKey.startsWith("sk-ap-")) return { ok: false, type: "agent-platform-key", source };
   return { ok: true, type: apiKey.startsWith("sk-proj-") ? "openai-project-key" : "openai-key", source };
 }
@@ -71,6 +137,20 @@ function upstreamDiagnostic(status, data, model) {
 }
 
 function userFacingAiError(diagnostic) {
+  if (diagnostic.provider === "agent_platform") {
+    if (diagnostic.status === 401 || diagnostic.status === 403) {
+      return [
+        "AgentPlatform отклонил запрос авторизации.",
+        "Проверьте AGENT_PLATFORM_API_KEY, endpoint AgentPlatform и права ключа. Ключ должен лежать только в Vercel Environment Variables.",
+      ].join("\n\n");
+    }
+
+    return [
+      "AgentPlatform не ответил на запрос цифрового двойника.",
+      `Диагностика: ${diagnostic.status} / ${diagnostic.code}. Проверьте AGENT_PLATFORM_API_URL и формат payload для вашего агента.`,
+    ].join("\n\n");
+  }
+
   if (diagnostic.status === 401) {
     return [
       "OpenAI отклонил ключ API. В Vercel нужно заменить OPENAI_API_KEY на ключ из OpenAI Platform API keys.",
@@ -106,7 +186,11 @@ function userFacingAiError(diagnostic) {
 }
 
 function compactContext(body) {
-  const allowed = {
+  return JSON.stringify(twinContext(body), null, 2).slice(0, 18000);
+}
+
+function twinContext(body) {
+  return {
     question: body.question,
     factory: body.factory,
     recipe: body.recipe,
@@ -116,26 +200,127 @@ function compactContext(body) {
     etalon: body.etalon,
     history: Array.isArray(body.history) ? body.history.slice(0, 12) : [],
   };
+}
 
-  return JSON.stringify(allowed, null, 2).slice(0, 18000);
+function buildUserInput(body) {
+  return [
+    `Вопрос пользователя: ${body.question || ""}`,
+    "Контекст цифрового двойника:",
+    compactContext(body),
+  ].join("\n\n");
+}
+
+function responsesPayload(model, userInput, includeOpenAiOptions = false) {
+  const payload = {
+    model,
+    instructions: SYSTEM_PROMPT,
+    input: userInput,
+    max_output_tokens: 900,
+  };
+
+  if (includeOpenAiOptions) {
+    payload.reasoning = { effort: "low" };
+    payload.text = { verbosity: "medium" };
+  }
+
+  return payload;
+}
+
+function agentPayload(body, model, userInput) {
+  const mode = String(process.env.AGENT_PLATFORM_PAYLOAD_MODE || "generic").toLowerCase();
+  if (mode === "responses") return responsesPayload(model, userInput, false);
+
+  if (mode === "chat") {
+    return {
+      model,
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: userInput },
+      ],
+    };
+  }
+
+  return {
+    model,
+    question: body.question || "",
+    input: userInput,
+    instructions: SYSTEM_PROMPT,
+    context: twinContext(body),
+    messages: [
+      { role: "system", content: SYSTEM_PROMPT },
+      { role: "user", content: userInput },
+    ],
+    metadata: {
+      app: "PowderTwin",
+      domain: "powder-coating-line-digital-twin",
+      factory: body.factory?.name,
+      recipe: body.recipe?.name,
+    },
+  };
+}
+
+async function callOpenAi(apiKey, model, body) {
+  const response = await fetch(OPENAI_RESPONSES_URL, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(responsesPayload(model, buildUserInput(body), true)),
+  });
+
+  const data = await response.json().catch(() => ({}));
+  return { response, data, answer: extractText(data), endpoint: OPENAI_RESPONSES_URL };
+}
+
+async function callAgentPlatform(apiKey, model, body) {
+  const endpoint = resolveAgentPlatformUrl();
+  if (!endpoint) {
+    const error = new Error("AGENT_PLATFORM_API_URL is not configured");
+    error.statusCode = 503;
+    error.code = "missing_agent_platform_url";
+    throw error;
+  }
+
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "x-api-key": apiKey,
+      apikey: apiKey,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(agentPayload(body, model, buildUserInput(body))),
+  });
+
+  const data = await response.json().catch(() => ({}));
+  return { response, data, answer: extractAgentText(data), endpoint };
 }
 
 module.exports = async function handler(req, res) {
-  const resolvedKey = resolveApiKey();
+  const provider = normalizeProvider();
+  const resolvedKey = resolveApiKey(provider);
   const apiKey = resolvedKey.value;
-  const key = keyStatus(apiKey, resolvedKey.source);
-  const model = process.env.OPENAI_MODEL || DEFAULT_MODEL;
+  const key = keyStatus(apiKey, resolvedKey.source, provider);
+  const model = provider === "agent_platform"
+    ? process.env.AGENT_PLATFORM_MODEL || process.env.OPENAI_MODEL || DEFAULT_MODEL
+    : process.env.OPENAI_MODEL || DEFAULT_MODEL;
+  const endpoint = provider === "agent_platform" ? resolveAgentPlatformUrl() : OPENAI_RESPONSES_URL;
 
   if (req.method === "GET") {
     return sendJson(res, 200, {
-      ready: key.ok,
+      ready: key.ok && (provider === "openai" || Boolean(endpoint)),
+      provider,
       keyType: key.type,
       keyEnv: key.source,
       model,
-      endpoint: OPENAI_RESPONSES_URL,
-      hint: key.ok
+      endpoint,
+      payloadMode: provider === "agent_platform" ? process.env.AGENT_PLATFORM_PAYLOAD_MODE || "generic" : "responses",
+      hint: key.ok && (provider === "openai" || Boolean(endpoint))
         ? "AI endpoint is configured. Use POST with the twin context."
-        : "Add a valid OpenAI Platform API key to OPENAI_API_KEY in Vercel Environment Variables.",
+        : provider === "agent_platform"
+          ? "Add AGENT_PLATFORM_API_URL or AGENT_PLATFORM_BASE_URL in Vercel Environment Variables."
+          : "Add a valid OpenAI Platform API key to OPENAI_API_KEY in Vercel Environment Variables.",
     });
   }
 
@@ -146,48 +331,33 @@ module.exports = async function handler(req, res) {
   if (key.type === "missing") {
     return sendJson(res, 503, {
       error: "AI key is not configured",
-      answer:
-        "ИИ пока работает в offline preview. Добавьте OPENAI_API_KEY в Vercel Environment Variables и сделайте redeploy проекта.",
-      diagnostic: { status: 503, keyType: key.type, keyEnv: key.source, model },
+      answer: provider === "agent_platform"
+        ? "ИИ пока работает в offline preview. Добавьте AGENT_PLATFORM_API_KEY в Vercel Environment Variables и сделайте redeploy проекта."
+        : "ИИ пока работает в offline preview. Добавьте OPENAI_API_KEY в Vercel Environment Variables и сделайте redeploy проекта.",
+      diagnostic: { status: 503, provider, keyType: key.type, keyEnv: key.source, model },
     });
   }
 
-  if (key.type === "agent-platform-key") {
+  if (provider === "openai" && key.type === "agent-platform-key") {
     const keyName = key.source || "OPENAI_API_KEY";
     return sendJson(res, 401, {
       error: "The configured key has sk-ap prefix and is not accepted by OpenAI Responses API.",
       answer: `В Vercel сейчас переменная ${keyName} содержит ключ формата sk-ap-..., а этот endpoint вызывает OpenAI Responses API. Нужен OpenAI Platform API key, обычно формата sk-proj-..., в переменной OPENAI_API_KEY. После замены сделайте redeploy.`,
-      diagnostic: { status: 401, keyType: key.type, keyEnv: key.source, model },
+      diagnostic: { status: 401, provider, keyType: key.type, keyEnv: key.source, model },
     });
   }
 
   try {
     const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body || {};
-    const userInput = [
-      `Вопрос пользователя: ${body.question || ""}`,
-      "Контекст цифрового двойника:",
-      compactContext(body),
-    ].join("\n\n");
+    const result = provider === "agent_platform"
+      ? await callAgentPlatform(apiKey, model, body)
+      : await callOpenAi(apiKey, model, body);
 
-    const response = await fetch(OPENAI_RESPONSES_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        instructions: SYSTEM_PROMPT,
-        input: userInput,
-        max_output_tokens: 900,
-        reasoning: { effort: "low" },
-        text: { verbosity: "medium" },
-      }),
-    });
-
-    const data = await response.json().catch(() => ({}));
+    const { response, data, answer } = result;
     if (!response.ok) {
       const diagnostic = upstreamDiagnostic(response.status, data, model);
+      diagnostic.provider = provider;
+      diagnostic.endpoint = result.endpoint;
       return sendJson(res, response.status, {
         error: diagnostic.message,
         answer: userFacingAiError(diagnostic),
@@ -195,16 +365,20 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    const answer = extractText(data);
     return sendJson(res, 200, {
       answer: answer || "ИИ вернул пустой ответ. Попробуйте уточнить вопрос.",
       model,
+      provider,
       responseId: data.id,
     });
   } catch (error) {
-    return sendJson(res, 500, {
+    const status = error.statusCode || 500;
+    return sendJson(res, status, {
       error: error.message,
-      answer: "Не удалось обработать запрос к ИИ. Проверьте формат данных и переменные окружения.",
+      answer: provider === "agent_platform" && error.code === "missing_agent_platform_url"
+        ? "Ключ AgentPlatform найден, но не указан endpoint. Добавьте AGENT_PLATFORM_API_URL или AGENT_PLATFORM_BASE_URL в Vercel Environment Variables и сделайте redeploy."
+        : "Не удалось обработать запрос к ИИ. Проверьте формат данных и переменные окружения.",
+      diagnostic: { status, provider, keyEnv: key.source, model, code: error.code || "handler_error" },
     });
   }
 };

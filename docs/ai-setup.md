@@ -2,36 +2,67 @@
 
 ## Где хранить API ключ
 
-Ключ OpenAI / Agent Platform нельзя хранить в HTML, JavaScript-файлах, GitHub, localStorage
+Ключ OpenAI / AgentPlatform нельзя хранить в HTML, JavaScript-файлах, GitHub, localStorage
 или прямо в браузере. Для Vercel ключ должен лежать в переменных окружения проекта.
+
+## Режим 1: подключение через AgentPlatform
+
+Это основной режим для текущего MVP, если ИИ у вас подключается не прямым ключом OpenAI,
+а через AgentPlatform.
 
 В Vercel:
 
 1. Открыть проект `digital-twin`.
 2. Перейти в `Settings` -> `Environment Variables`.
-3. Добавить переменную:
-   - `OPENAI_API_KEY` = ключ из OpenAI Platform API keys.
-4. Рекомендуемо добавить модель:
+3. Добавить переменные:
+   - `AI_PROVIDER` = `agent_platform`.
+   - `AGENT_PLATFORM_API_KEY` = ваш ключ AgentPlatform, например формата `sk-ap-...`.
+   - `AGENT_PLATFORM_API_URL` = endpoint вашего агента или gateway.
+4. Если AgentPlatform дает только base URL, можно вместо полного endpoint указать:
+   - `AGENT_PLATFORM_BASE_URL` = base URL, а система добавит `/v1/responses`.
+5. Если нужен конкретный формат payload:
+   - `AGENT_PLATFORM_PAYLOAD_MODE` = `generic`, `responses` или `chat`.
+6. Опционально указать модель:
+   - `AGENT_PLATFORM_MODEL` = модель или идентификатор агента, если это требуется вашим endpoint.
+7. Выбрать окружения `Production`, `Preview`, `Development` по необходимости.
+8. Нажать `Save`.
+9. Сделать redeploy последнего деплоя или новый push в `main`.
+
+Если `sk-ap-...` уже лежит в `OPENAI_API_KEY`, bridge автоматически переключится
+в режим AgentPlatform. Но для порядка лучше перенести такой ключ в
+`AGENT_PLATFORM_API_KEY`, чтобы по названию переменной было понятно, какой провайдер
+используется.
+
+Что делает `/api/ai` в этом режиме:
+
+- принимает вопрос и текущий контекст цифрового двойника из браузера;
+- отправляет их на AgentPlatform с серверной стороны;
+- поддерживает ключи `sk-ap-...`;
+- умеет читать типовые ответы вида `answer`, `output`, `message`, `text`,
+  `choices[0].message.content` и `output_text`;
+- `GET /api/ai` показывает диагностику: провайдер, найденную переменную ключа,
+  endpoint и payload mode, не раскрывая сам ключ.
+
+## Режим 2: прямое подключение к OpenAI
+
+Этот режим нужен только если вы хотите обращаться напрямую к OpenAI Responses API,
+без AgentPlatform.
+
+В Vercel:
+
+1. Добавить переменную:
+   - `AI_PROVIDER` = `openai`.
+   - `OPENAI_API_KEY` = ключ из OpenAI Platform API keys, обычно формата `sk-proj-...`.
+2. Рекомендуемо добавить модель:
    - `OPENAI_MODEL` = `gpt-5.5`.
-5. Выбрать окружения `Production`, `Preview`, `Development` по необходимости.
-6. Нажать `Save`.
-7. Сделать redeploy последнего деплоя или новый push в `main`.
-
-Также поддержан резервный вариант имени переменной:
-
-- `AGENT_PLATFORM_API_KEY`
-
-Но основное имя лучше оставить `OPENAI_API_KEY`, потому что это стандарт для OpenAI SDK,
-документации и большинства серверных интеграций.
-
-Важно: ключ формата `sk-ap-...` текущий `/api/ai` не использует. Этот endpoint вызывает
-OpenAI Responses API напрямую, поэтому нужен обычный OpenAI Platform API key, обычно
-формата `sk-proj-...`. Если в Vercel лежит `sk-ap-...`, чат покажет диагностическое
-сообщение и попросит заменить ключ.
+3. Выбрать окружения `Production`, `Preview`, `Development` по необходимости.
+4. Нажать `Save`.
+5. Сделать redeploy последнего деплоя или новый push в `main`.
 
 ## Что уже подготовлено в проекте
 
-- `/api/ai` - серверная Vercel Function, которая обращается к OpenAI Responses API.
+- `/api/ai` - серверная Vercel Function, которая работает как AI bridge:
+  AgentPlatform или прямой OpenAI.
 - `apps/web/ai-bridge.js` - фронтенд-мост, который отправляет вопрос и текущий контекст
   цифрового двойника на `/api/ai`.
 - Если ключ не настроен или API недоступен, интерфейс остается в offline preview и дает
@@ -43,7 +74,7 @@ OpenAI Responses API напрямую, поэтому нужен обычный 
 
 Все, что попадает в HTML/JS, может увидеть любой посетитель сайта через DevTools или исходный код.
 Даже если репозиторий приватный, ключ внутри фронтенда все равно попадет в браузер пользователя.
-Поэтому ключ должен быть только на серверной стороне: Vercel Environment Variables -> Vercel Function -> OpenAI API.
+Поэтому ключ должен быть только на серверной стороне: Vercel Environment Variables -> Vercel Function -> AgentPlatform или OpenAI API.
 
 ## Рекомендуемая модель
 
