@@ -28,6 +28,7 @@
    - `messages: [{ role, content }]`
 8. Модель по умолчанию:
    - `AGENT_PLATFORM_MODEL` = `openai/gpt-5.4`.
+   - Если случайно указать `gpt-5.4`, bridge автоматически отправит `openai/gpt-5.4`.
 9. Выбрать окружения `Production`, `Preview`, `Development` по необходимости.
 10. Нажать `Save`.
 11. Сделать redeploy последнего деплоя или новый push в `main`.
@@ -44,6 +45,7 @@
 - поддерживает ключи `sk-ap-...`;
 - по умолчанию вызывает `https://api.agentplatform.ru/v1/chat/completions`;
 - по умолчанию использует модель `openai/gpt-5.4`;
+- для endpoint `/chat/completions` автоматически использует payload mode `chat`;
 - умеет читать типовые ответы вида `answer`, `output`, `message`, `text`,
   `choices[0].message.content` и `output_text`;
 - `GET /api/ai` показывает диагностику: провайдер, найденную переменную ключа,

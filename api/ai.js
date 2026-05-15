@@ -231,8 +231,16 @@ function responsesPayload(model, userInput, includeOpenAiOptions = false) {
 
 function agentPayloadMode(endpoint = "") {
   const configured = String(process.env.AGENT_PLATFORM_PAYLOAD_MODE || "").toLowerCase().trim();
+  if (endpoint.includes("/chat/completions") && (!configured || configured === "generic")) return "chat";
   if (configured) return configured;
   return endpoint.includes("/chat/completions") ? "chat" : "generic";
+}
+
+function normalizeAgentPlatformModel(model = "") {
+  const value = String(model || "").trim();
+  if (!value) return DEFAULT_AGENT_PLATFORM_MODEL;
+  if (/^gpt-/i.test(value)) return `openai/${value}`;
+  return value;
 }
 
 function agentPayload(body, model, userInput, endpoint) {
@@ -310,7 +318,7 @@ module.exports = async function handler(req, res) {
   const apiKey = resolvedKey.value;
   const key = keyStatus(apiKey, resolvedKey.source, provider);
   const model = provider === "agent_platform"
-    ? process.env.AGENT_PLATFORM_MODEL || DEFAULT_AGENT_PLATFORM_MODEL
+    ? normalizeAgentPlatformModel(process.env.AGENT_PLATFORM_MODEL || DEFAULT_AGENT_PLATFORM_MODEL)
     : process.env.OPENAI_MODEL || DEFAULT_MODEL;
   const endpoint = provider === "agent_platform" ? resolveAgentPlatformUrl() : OPENAI_RESPONSES_URL;
 
