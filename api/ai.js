@@ -38,10 +38,20 @@ function extractText(data) {
   return chunks.join("\n").trim();
 }
 
-function keyStatus(apiKey) {
-  if (!apiKey) return { ok: false, type: "missing" };
-  if (apiKey.startsWith("sk-ap-")) return { ok: false, type: "agent-platform-key" };
-  return { ok: true, type: apiKey.startsWith("sk-proj-") ? "openai-project-key" : "openai-key" };
+function resolveApiKey() {
+  if (process.env.OPENAI_API_KEY) {
+    return { value: process.env.OPENAI_API_KEY, source: "OPENAI_API_KEY" };
+  }
+  if (process.env.AGENT_PLATFORM_API_KEY) {
+    return { value: process.env.AGENT_PLATFORM_API_KEY, source: "AGENT_PLATFORM_API_KEY" };
+  }
+  return { value: "", source: null };
+}
+
+function keyStatus(apiKey, source) {
+  if (!apiKey) return { ok: false, type: "missing", source };
+  if (apiKey.startsWith("sk-ap-")) return { ok: false, type: "agent-platform-key", source };
+  return { ok: true, type: apiKey.startsWith("sk-proj-") ? "openai-project-key" : "openai-key", source };
 }
 
 function sanitizeError(message = "") {
@@ -111,14 +121,16 @@ function compactContext(body) {
 }
 
 module.exports = async function handler(req, res) {
-  const apiKey = process.env.OPENAI_API_KEY || process.env.AGENT_PLATFORM_API_KEY;
-  const key = keyStatus(apiKey);
+  const resolvedKey = resolveApiKey();
+  const apiKey = resolvedKey.value;
+  const key = keyStatus(apiKey, resolvedKey.source);
   const model = process.env.OPENAI_MODEL || DEFAULT_MODEL;
 
   if (req.method === "GET") {
     return sendJson(res, 200, {
       ready: key.ok,
       keyType: key.type,
+      keyEnv: key.source,
       model,
       endpoint: OPENAI_RESPONSES_URL,
       hint: key.ok
@@ -136,16 +148,16 @@ module.exports = async function handler(req, res) {
       error: "AI key is not configured",
       answer:
         "ИИ пока работает в offline preview. Добавьте OPENAI_API_KEY в Vercel Environment Variables и сделайте redeploy проекта.",
-      diagnostic: { status: 503, keyType: key.type, model },
+      diagnostic: { status: 503, keyType: key.type, keyEnv: key.source, model },
     });
   }
 
   if (key.type === "agent-platform-key") {
+    const keyName = key.source || "OPENAI_API_KEY";
     return sendJson(res, 401, {
       error: "The configured key has sk-ap prefix and is not accepted by OpenAI Responses API.",
-      answer:
-        "В Vercel сейчас лежит ключ формата sk-ap-..., а этот endpoint вызывает OpenAI Responses API. Нужен OpenAI Platform API key, обычно формата sk-proj-..., в переменной OPENAI_API_KEY. После замены сделайте redeploy.",
-      diagnostic: { status: 401, keyType: key.type, model },
+      answer: `В Vercel сейчас переменная ${keyName} содержит ключ формата sk-ap-..., а этот endpoint вызывает OpenAI Responses API. Нужен OpenAI Platform API key, обычно формата sk-proj-..., в переменной OPENAI_API_KEY. После замены сделайте redeploy.`,
+      diagnostic: { status: 401, keyType: key.type, keyEnv: key.source, model },
     });
   }
 
