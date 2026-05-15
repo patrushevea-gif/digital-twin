@@ -68,7 +68,7 @@ button { cursor: pointer; }
   top: 0;
   height: 100vh;
   display: grid;
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto auto 1fr;
   gap: 22px;
   padding: 22px 16px;
   border-right: 1px solid var(--line);
@@ -200,17 +200,6 @@ small {
   color: var(--muted);
 }
 
-.rail-help {
-  width: 46px;
-  height: 46px;
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
-  color: var(--cyan);
-  background: rgba(101, 230, 218, 0.08);
-  font-size: 1.1rem;
-  font-weight: 800;
-}
-
 .main {
   min-width: 0;
   display: grid;
@@ -229,15 +218,17 @@ small {
 }
 
 .title-block h1 {
-  margin: 8px 0 12px;
-  max-width: 950px;
-  font-size: 2.7rem;
+  margin: 6px 0 10px;
+  max-width: 760px;
+  font-size: 2.35rem;
   line-height: 1.04;
   letter-spacing: 0;
 }
 
 .title-block p {
   margin: 0;
+  max-width: 760px;
+  font-size: 0.92rem;
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
@@ -294,6 +285,16 @@ input:focus {
   color: var(--text);
   background: var(--surface-3);
   font-weight: 800;
+}
+
+.top-help-button {
+  border-color: var(--line-strong);
+  color: var(--cyan);
+  background: rgba(101, 230, 218, 0.1);
+}
+
+.logout-button {
+  min-width: 76px;
 }
 
 .soft-button {
@@ -1175,6 +1176,8 @@ input[type="checkbox"] {
 }
 
 .help-head {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
   padding-bottom: 16px;
@@ -1262,17 +1265,13 @@ body.auth-locked .app-shell {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .rail-section {
+  .rail-nav a:nth-child(4),
+  .rail-nav a:nth-child(6) {
     display: none;
   }
 
-  .rail-help {
-    position: fixed;
-    right: 12px;
-    bottom: 12px;
-    z-index: 40;
-    background: rgba(9, 11, 15, 0.92);
-    box-shadow: var(--shadow);
+  .rail-section {
+    display: none;
   }
 
   .main {
@@ -1288,16 +1287,25 @@ body.auth-locked .app-shell {
   }
 
   .title-block h1 {
-    font-size: 2rem;
+    font-size: 1.72rem;
+  }
+
+  .kpi-card strong {
+    font-size: 1.42rem;
   }
 
   .top-actions {
     display: grid;
-    grid-template-columns: 1fr 42px 54px;
+    grid-template-columns: 42px 42px 84px;
+    justify-content: start;
   }
 
   .top-actions label {
     grid-column: 1 / -1;
+  }
+
+  .logout-button {
+    min-width: 0;
   }
 
   .kpi-row,

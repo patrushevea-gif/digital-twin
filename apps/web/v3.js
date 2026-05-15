@@ -198,10 +198,10 @@ function renderFactories() {
 
 function renderKpi(model) {
   const cards = model ? [
-    ["Выпуск", `${fmt(model.throughput)} кг`, `${state.shift} ч · ${currentRecipe().name}`],
-    ["OEE", `${Math.round(model.oee * 100)}%`, `${Math.round(model.availability * 100)} / ${Math.round(model.performance * 100)} / ${Math.round(model.quality * 100)}`],
+    ["Выпуск", `${fmt(model.throughput)} кг`, `смена ${state.shift} ч`],
+    ["OEE", `${Math.round(model.oee * 100)}%`, "доступность / скорость / качество"],
     ["Узкое место", model.bottleneck.item.short, `${Math.round(model.bottleneck.state.load)}% загрузка`],
-    ["Риск качества", `${Math.round((1 - model.quality) * 100)}%`, `${currentRecipe().name}`],
+    ["Риск качества", `${Math.round((1 - model.quality) * 100)}%`, "расчет по рецептуре"],
     ["Энергия", `${fmt(model.energy)} кВт·ч`, `${(model.energy / Math.max(model.throughput, 1)).toFixed(2)} кВт·ч/кг`],
   ] : [
     ["Завод 02", "контур", "ожидает данных"],
@@ -239,7 +239,7 @@ function renderLine(model) {
       <button class="equipment-node ${isActive ? "active" : ""} ${isConstraint ? "constraint" : ""}" data-equipment="${item.id}" type="button">
         <div class="node-top"><i class="node-dot"></i><span class="node-load">${Math.round(row.state.load)}%</span></div>
         <strong>${index + 1}. ${item.short}</strong>
-        <small>${item.area}</small>
+        <small>${item.cap} кг/ч · ${item.cycle} мин</small>
         <div class="node-bar" style="--value:${clamp(row.state.load, 0, 100)}%"><i></i></div>
       </button>
     `;
@@ -267,7 +267,6 @@ function renderLineMap(model) {
       <button class="scheme-node ${active} ${constraint} ${extraClass}" data-equipment="${item.id}" type="button">
         <span class="scheme-index">${index + 1}</span>
         <strong>${item.short}</strong>
-        <small>${item.area}</small>
         <small>${Math.round(row.state.load)}% загрузка · ${item.cap} кг/ч</small>
       </button>
     `;
@@ -354,8 +353,7 @@ function renderAi(model) {
     : "Для выбранного завода пока нет активной линии. Добавьте оборудование и маршрут.";
   const cards = [
     ["AI Brief", brief],
-    ["Боттлнек", model ? `${model.bottleneck.item.short}: ${Math.round(model.bottleneck.state.risk)}% риска` : "нет активной линии"],
-    ["Калибровка", `Факт vs модель: ${model ? fmt(actual.output - model.throughput) : 0} кг`],
+    ["Факт / модель", model ? `${fmt(actual.output - model.throughput)} кг отклонение` : "нет активной линии"],
   ];
   $("aiSummary").innerHTML = cards.map((card) => `<article><strong>${card[0]}</strong><small>${card[1]}</small></article>`).join("");
   const prompts = [
@@ -441,13 +439,13 @@ function renderReadiness() {
 
 function renderHelp() {
   const items = [
-    ["Цель", "Собрать Line Twin MVP: оборудование, рецептура, смена, расчет выпуска, bottleneck и рекомендация."],
-    ["Старт", "Первый экран сразу показывает KPI, схему линии, быстрые параметры смены и AI Brief."],
-    ["Схема линии", "Переключатель Пульт линии / Схема связей показывает либо расчетную панель, либо маршрут оборудования."],
-    ["Паспорт решения", "После сценария система формирует проблему, причину, эффект, риск и что проверить на заводе."],
-    ["AI", "AI Copilot получает текущий контекст двойника и отвечает через серверный endpoint /api/ai. Серверный bridge может работать через AgentPlatform или напрямую через OpenAI, ключ хранится в Vercel."],
-    ["Карта проекта", "Ниже стартового экрана показаны 5 уровней: Platform, Factory Twin, Line Twin, Process Twin и AI Layer."],
-    ["Данные", "Пока значения расчетные. Для точности нужны паспорта оборудования, времена операций, простои, качество и энергия."],
+    ["Цель", "Собрать плотный Line Twin MVP: оборудование, рецептура, смена, выпуск, узкое место и рекомендация."],
+    ["Как читать экран", "Сверху видны главные KPI. В центре схема линии и быстрые параметры смены. Справа ИИ-аналитик, которому можно задавать вопросы по текущему состоянию."],
+    ["Схема линии", "Пульт линии показывает расчетные нагрузки узлов. Схема связей показывает маршрут: сырье, зона навески, смеситель, промежуточная проба ОТК, экструдер, мельница, фасовка и ОТК."],
+    ["Сценарии", "Измените план, простой или количество смен цвета. Система пересчитает выпуск, OEE, риск, энергию и сформирует паспорт решения."],
+    ["ИИ", "ИИ получает текущий контекст двойника через /api/ai и отвечает через AgentPlatform. Ключ хранится только в Vercel Environment Variables, не в браузере."],
+    ["История", "Пока данные вводятся вручную. Исторические смены используются для сравнения факта с моделью и будущей калибровки расчетов."],
+    ["Что дальше", "Для точности нужны паспорта оборудования, времена операций, рецептуры, простои, качество, партии и энергия."],
   ];
   $("helpContent").innerHTML = items.map((item) => `<article><h3>${item[0]}</h3><p>${item[1]}</p></article>`).join("");
 }
@@ -642,7 +640,9 @@ function initHelp() {
   const close = () => {
     $("helpOverlay").hidden = true;
   };
-  $("helpButton").onclick = open;
+  [$("helpButtonTop"), $("helpButton")].filter(Boolean).forEach((button) => {
+    button.onclick = open;
+  });
   $("helpClose").onclick = close;
   $("helpOverlay").onclick = (event) => {
     if (event.target === $("helpOverlay")) close();
