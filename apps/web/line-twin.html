@@ -8,11 +8,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/apps/web/line-twin.css" />
+  <link rel="stylesheet" href="/apps/web/factory-hub.css" />
 </head>
 <body>
   <div class="shell">
     <nav class="rail" aria-label="Навигация">
-      <div class="mark">PT</div>
+      <a class="mark" href="#factoryHub" title="PowderTwin: карта заводов">
+        <span>Заводы</span>
+        <small>PowderTwin</small>
+      </a>
       <a class="active" href="#line" title="Схема линии">Линия</a>
       <a href="#ai" title="AI Copilot">ИИ</a>
       <button id="helpBtn" type="button" title="Как работает">Справка</button>
@@ -30,8 +34,8 @@
             <p class="context">Цифровой двойник первого производственного модуля: оборудование, рецептура, смена, расчет выпуска, узкое место и AI-рекомендация в одном рабочем cockpit.</p>
             <div class="hero-actions">
               <span class="pill primary">Цифровой двойник</span>
-              <span class="pill">Завод 01 / Цех покрытий</span>
-              <span class="pill">Завод 02 готов к подключению</span>
+              <span class="pill" id="activeAssetPill">Завод 01 / Линия порошковой краски</span>
+              <span class="pill">2 завода · 6 линий</span>
               <span class="pill" id="confidencePill">Точность: demo</span>
             </div>
           </header>
@@ -60,6 +64,19 @@
           </section>
         </section>
 
+        <section class="factory-panel panel" id="factoryHub" aria-label="Выбор завода и линии">
+          <div class="section-head">
+            <div>
+              <span class="eyebrow">Factory Hub</span>
+              <h2>Карта заводов и линий</h2>
+            </div>
+            <small id="factoryStatus">Открыт первый цифровой двойник</small>
+          </div>
+          <div class="factory-bar" id="factoryTabs"></div>
+          <div class="line-catalog" id="lineCatalog"></div>
+          <div class="asset-summary" id="assetSummary"></div>
+        </section>
+
         <section class="kpis" id="kpis" aria-label="KPI"></section>
 
         <section class="line-area" id="line">
@@ -79,13 +96,19 @@
         <section class="bottom-grid">
           <div class="panel">
             <div class="section-head">
-              <div><span class="eyebrow">What-if</span><h2>Сравнение сценариев</h2></div>
+              <div>
+                <span class="eyebrow">What-if</span>
+                <h2>Сравнение сценариев</h2>
+              </div>
             </div>
             <div class="scenario-grid" id="compare"></div>
           </div>
           <div class="panel">
             <div class="section-head">
-              <div><span class="eyebrow">Data Backbone</span><h2>Что понадобится от завода</h2></div>
+              <div>
+                <span class="eyebrow">Data Backbone</span>
+                <h2>Что понадобится от завода</h2>
+              </div>
               <small>Пока значения demo</small>
             </div>
             <div class="data-list">
@@ -101,7 +124,10 @@
       <aside class="ai" id="ai">
         <section class="ai-card">
           <div class="ai-title">
-            <div><span class="eyebrow">AI Intelligence Layer</span><h2>AI Brief</h2></div>
+            <div>
+              <span class="eyebrow">AI Intelligence Layer</span>
+              <h2>AI Brief</h2>
+            </div>
             <span class="status-dot" aria-hidden="true"></span>
           </div>
           <div class="brief-grid" id="brief"></div>
@@ -109,10 +135,15 @@
 
         <section class="ai-card">
           <div class="ai-title">
-            <div><span class="eyebrow">Copilot Chat</span><h2>Спросить систему</h2></div>
+            <div>
+              <span class="eyebrow">Copilot Chat</span>
+              <h2>Спросить систему</h2>
+            </div>
           </div>
           <div class="chat">
-            <div class="messages" id="messages"><div class="message">Спросите: почему узкое место здесь, что будет при партии 800 кг, какой сценарий лучше или какие данные запросить у завода.</div></div>
+            <div class="messages" id="messages">
+              <div class="message">Спросите: почему узкое место здесь, что будет при партии 800 кг, какой сценарий лучше или какие данные запросить у завода.</div>
+            </div>
             <form class="chat-form" id="chatForm">
               <input id="question" type="text" placeholder="Ваш вопрос по линии" autocomplete="off" />
               <button id="askButton" type="submit">Спросить</button>
@@ -126,11 +157,15 @@
   <div class="modal" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
     <div class="modal-body">
       <div class="modal-head">
-        <div><span class="eyebrow">PowderTwin Guide</span><h2 id="helpTitle">Как работает цифровой двойник</h2></div>
+        <div>
+          <span class="eyebrow">PowderTwin Guide</span>
+          <h2 id="helpTitle">Как работает цифровой двойник</h2>
+        </div>
         <button class="round-button" id="closeHelp" type="button">×</button>
       </div>
       <div class="help-grid">
         <article class="help-card"><h3>Цель MVP</h3><p>Ответить на главный вопрос: что ограничивает выпуск линии в выбранной смене и что изменится, если поменять сценарий.</p></article>
+        <article class="help-card"><h3>Карта заводов</h3><p>Платформа рассчитана на два завода, по три линии на каждом. Сейчас подключен только первый Line Twin: Завод 01 / линия порошковой краски. Остальные пять линий показаны как будущий контур.</p></article>
         <article class="help-card"><h3>Принцип работы</h3><p>Модель берет рецепт, длительность смены, очистку, простои и мощности узлов. Затем считает выпуск, OEE, энергию, риск качества и bottleneck.</p></article>
         <article class="help-card"><h3>Варианты использования</h3><ul><li>расчет смены до запуска;</li><li>поиск узких мест;</li><li>сравнение what-if сценариев;</li><li>подготовка данных для точного двойника;</li><li>демо руководству ценности Line Twin.</li></ul></article>
         <article class="help-card"><h3>История и эталон</h3><p>Когда появятся данные, сюда добавятся фактические смены, эталонные паспорта и сравнение факт/модель. Сейчас слой работает как offline intelligence.</p></article>
@@ -141,5 +176,6 @@
   </div>
 
   <script src="/apps/web/line-twin.js"></script>
+  <script src="/apps/web/factory-hub.js"></script>
 </body>
 </html>
