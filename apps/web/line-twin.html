@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PowderTwin | Line Twin MVP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/apps/web/line-twin.css" />
+</head>
+<body>
+  <div class="shell">
+    <nav class="rail" aria-label="Навигация">
+      <div class="mark">PT</div>
+      <a class="active" href="#line" title="Схема линии">Линия</a>
+      <a href="#ai" title="AI Copilot">ИИ</a>
+      <button id="helpBtn" type="button" title="Как работает">Справка</button>
+      <span class="spacer"></span>
+      <button id="demoBtn" type="button" title="Запустить демо">Демо</button>
+    </nav>
+
+    <div class="workspace">
+      <main class="main">
+        <section class="top">
+          <header class="hero">
+            <canvas class="twin-3d" id="twin3d" width="420" height="300" aria-label="3D голограмма линии"></canvas>
+            <span class="eyebrow">Digital Twin MVP / Завод 01</span>
+            <h1>Линия порошковой краски</h1>
+            <p class="context">Цифровой двойник первого производственного модуля: оборудование, рецептура, смена, расчет выпуска, узкое место и AI-рекомендация в одном рабочем cockpit.</p>
+            <div class="hero-actions">
+              <span class="pill primary">Цифровой двойник</span>
+              <span class="pill">Завод 01 / Цех покрытий</span>
+              <span class="pill">Завод 02 готов к подключению</span>
+              <span class="pill" id="confidencePill">Точность: demo</span>
+            </div>
+          </header>
+
+          <section class="control-card" aria-label="Сценарий смены">
+            <div class="control-head">
+              <div>
+                <span class="eyebrow">Scenario Lab</span>
+                <h2>Сценарий смены</h2>
+              </div>
+              <button class="demo-button" id="resetBtn" type="button">Сброс</button>
+            </div>
+            <div class="control-grid">
+              <label class="field">Рецептура<select id="recipe"></select></label>
+              <label class="field">Длительность, ч<input id="hours" type="number" min="4" max="12" step=".5" value="8" /></label>
+              <label class="field">Партия, кг<input id="batch" type="number" min="250" max="1200" step="25" value="500" /></label>
+              <label class="field">Простой, мин<input id="downtime" type="number" min="0" max="240" step="5" value="0" /></label>
+              <label class="field">Интенсивность, %<input id="intensity" type="range" min="55" max="100" value="78" /></label>
+              <label class="field">Смены цвета<input id="colors" type="range" min="1" max="5" value="1" /></label>
+            </div>
+            <div class="toggles">
+              <label class="toggle"><input id="cleaning" type="checkbox" checked /> Учитывать очистку</label>
+              <label class="toggle"><input id="historyMode" type="checkbox" /> Сравнить с историей</label>
+            </div>
+            <div class="demo-row" id="presets"></div>
+          </section>
+        </section>
+
+        <section class="kpis" id="kpis" aria-label="KPI"></section>
+
+        <section class="line-area" id="line">
+          <div class="panel">
+            <div class="section-head">
+              <div>
+                <span class="eyebrow">Process Flow</span>
+                <h2>Схема оборудования и поток партии</h2>
+              </div>
+              <small>Маршрут MVP без лишних узлов</small>
+            </div>
+            <div class="line-map" id="lineMap"></div>
+          </div>
+          <aside class="panel passport" id="passport"></aside>
+        </section>
+
+        <section class="bottom-grid">
+          <div class="panel">
+            <div class="section-head">
+              <div><span class="eyebrow">What-if</span><h2>Сравнение сценариев</h2></div>
+            </div>
+            <div class="scenario-grid" id="compare"></div>
+          </div>
+          <div class="panel">
+            <div class="section-head">
+              <div><span class="eyebrow">Data Backbone</span><h2>Что понадобится от завода</h2></div>
+              <small>Пока значения demo</small>
+            </div>
+            <div class="data-list">
+              <div>Паспортные мощности оборудования и фактические скорости.</div>
+              <div>Рецептуры, типовые партии, требования к очистке.</div>
+              <div>История смен: выпуск, простои, брак, качество.</div>
+              <div>Энергия по сменам или по ключевым узлам.</div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <aside class="ai" id="ai">
+        <section class="ai-card">
+          <div class="ai-title">
+            <div><span class="eyebrow">AI Intelligence Layer</span><h2>AI Brief</h2></div>
+            <span class="status-dot" aria-hidden="true"></span>
+          </div>
+          <div class="brief-grid" id="brief"></div>
+        </section>
+
+        <section class="ai-card">
+          <div class="ai-title">
+            <div><span class="eyebrow">Copilot Chat</span><h2>Спросить систему</h2></div>
+          </div>
+          <div class="chat">
+            <div class="messages" id="messages"><div class="message">Спросите: почему узкое место здесь, что будет при партии 800 кг, какой сценарий лучше или какие данные запросить у завода.</div></div>
+            <form class="chat-form" id="chatForm">
+              <input id="question" type="text" placeholder="Ваш вопрос по линии" autocomplete="off" />
+              <button id="askButton" type="submit">Спросить</button>
+            </form>
+          </div>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <div class="modal" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+    <div class="modal-body">
+      <div class="modal-head">
+        <div><span class="eyebrow">PowderTwin Guide</span><h2 id="helpTitle">Как работает цифровой двойник</h2></div>
+        <button class="round-button" id="closeHelp" type="button">×</button>
+      </div>
+      <div class="help-grid">
+        <article class="help-card"><h3>Цель MVP</h3><p>Ответить на главный вопрос: что ограничивает выпуск линии в выбранной смене и что изменится, если поменять сценарий.</p></article>
+        <article class="help-card"><h3>Принцип работы</h3><p>Модель берет рецепт, длительность смены, очистку, простои и мощности узлов. Затем считает выпуск, OEE, энергию, риск качества и bottleneck.</p></article>
+        <article class="help-card"><h3>Варианты использования</h3><ul><li>расчет смены до запуска;</li><li>поиск узких мест;</li><li>сравнение what-if сценариев;</li><li>подготовка данных для точного двойника;</li><li>демо руководству ценности Line Twin.</li></ul></article>
+        <article class="help-card"><h3>История и эталон</h3><p>Когда появятся данные, сюда добавятся фактические смены, эталонные паспорта и сравнение факт/модель. Сейчас слой работает как offline intelligence.</p></article>
+        <article class="help-card"><h3>AI слой</h3><p>AI Brief объясняет расчет, а чат отправляет вопрос в API вместе с контекстом линии. Для AgentPlatform нужны переменные Vercel: AI_PROVIDER=agent_platform, AGENT_PLATFORM_API_KEY, AGENT_PLATFORM_API_URL=https://api.agentplatform.ru/v1/chat/completions, AGENT_PLATFORM_MODEL=openai/gpt-5.4.</p></article>
+        <article class="help-card"><h3>Что дальше</h3><p>Следующий шаг: заменить demo-значения паспортами оборудования, реальными рецептурами, историей смен и правилами очистки.</p></article>
+      </div>
+    </div>
+  </div>
+
+  <script src="/apps/web/line-twin.js"></script>
+</body>
+</html>
