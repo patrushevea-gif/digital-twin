@@ -23,3 +23,10 @@
 .asset-summary strong{min-width:220px;line-height:1.25}
 .asset-summary span{color:#aebdc1;line-height:1.35;font-size:13px}
 @media(max-width:860px){.rail a.mark{width:min(20vw,76px);height:42px;padding:6px}.rail a.mark span{font-size:11px}.rail a.mark small{display:none}.factory-bar,.line-catalog{grid-template-columns:1fr}.line-tile{min-height:104px}.asset-summary{display:grid;gap:8px}.asset-summary strong{min-width:0}}
+
+/* Late-loaded fit guard: keeps compact analytical cards inside their panels. */
+.bottom-grid,.scenario-grid,.scenario-card,.data-list,.data-list div{min-width:0}
+.scenario-card{overflow:hidden;display:grid;align-content:start}
+.scenario-card span,.scenario-card strong,.scenario-card small,.data-list div{max-width:100%;overflow-wrap:anywhere;word-break:break-word;hyphens:auto}
+.scenario-card strong{font-size:clamp(18px,1.35vw,22px);line-height:1.08}
+.scenario-card small{font-size:clamp(12px,.9vw,14px);line-height:1.28}
