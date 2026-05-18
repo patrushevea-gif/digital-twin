@@ -67,6 +67,13 @@
     if (activeAssetPill) activeAssetPill.textContent = `${activeFactory().name} / ${activeLine().short}`;
   }
 
+  function compactScenarioLabels() {
+    const bottleneck = document.querySelector("#compare .scenario-card:nth-child(3) strong");
+    if (!bottleneck || !bottleneck.textContent.includes("/")) return;
+    bottleneck.title = bottleneck.textContent;
+    bottleneck.textContent = bottleneck.textContent.split("/")[0].trim();
+  }
+
   document.addEventListener("click", (event) => {
     const factoryButton = event.target.closest("[data-factory]");
     if (factoryButton) {
@@ -95,4 +102,7 @@
   });
 
   renderFactoryHub();
+  compactScenarioLabels();
+  const compare = byId("compare");
+  if (compare) new MutationObserver(compactScenarioLabels).observe(compare, { childList: true, subtree: true });
 })();
